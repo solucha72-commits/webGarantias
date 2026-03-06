@@ -11,11 +11,11 @@ export default function Home() {
         <View style={styles.card}>
           <View style={styles.headerSection}>
             <Text style={styles.title}>Garantías</Text>
-            <Text style={styles.subtitle}>GESTOR DOCUMENTAL GARANTIAS</Text>
+            <Text style={styles.subtitle}>Gestión inteligente de tus productos</Text>
           </View>
 
           <View style={styles.buttonGrid}>
-            {/* 1. Botón Escanear (Lógica de cámara pendiente) */}
+            {/* 1. Botón Escanear - AHORA NAVEGA A /escaner */}
             <Pressable style={({ pressed }) => [styles.scanButton, pressed && { opacity: 0.8 }]} onPress={() => router.push("/escaner")}>
               <Text style={styles.buttonText}>📷 Escanear Ticket</Text>
             </Pressable>
@@ -23,6 +23,10 @@ export default function Home() {
             {/* 2. Botón Formulario (Enlazado a tu nuevo archivo) */}
             <Pressable style={({ pressed }) => [styles.formButton, pressed && { opacity: 0.8 }]} onPress={() => router.push("/altas")}>
               <Text style={styles.buttonText}>📝 Nueva Alta Manual</Text>
+            </Pressable>
+
+            <Pressable style={({ pressed }) => [styles.informesButton, pressed && { opacity: 0.8 }]} onPress={() => router.push("/informes")}>
+              <Text style={styles.buttonText}>📊 Informes</Text>
             </Pressable>
 
             <View style={styles.divider} />
@@ -33,7 +37,7 @@ export default function Home() {
             </Pressable>
           </View>
 
-          <Text style={styles.footerText}>Versión 1.1.6 - 2026</Text>
+          <Text style={styles.footerText}>Versión 1.0.2 - 2026</Text>
         </View>
       </View>
     </ScrollView>
@@ -113,6 +117,16 @@ const styles = StyleSheet.create({
   formButton: {
     width: "100%",
     backgroundColor: "#10b981", // Verde esmeralda
+    paddingVertical: 20,
+    borderRadius: 18,
+    alignItems: "center",
+    marginBottom: 16,
+    ...Platform.select({ web: { cursor: "pointer" } }),
+  },
+
+  informesButton: {
+    width: "100%",
+    backgroundColor: "#f59e0b", // Naranja
     paddingVertical: 20,
     borderRadius: 18,
     alignItems: "center",
