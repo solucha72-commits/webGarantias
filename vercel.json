@@ -1,0 +1,8 @@
+{
+  "buildCommand": "expo export --platform web",
+  "outputDirectory": "dist",
+  "env": {
+    "EXPO_PUBLIC_SUPABASE_URL": "@SUPABASE_URL",
+    "EXPO_PUBLIC_SUPABASE_ANON_KEY": "@SUPABASE_ANON_KEY"
+  }
+}
