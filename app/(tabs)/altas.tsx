@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Platform, ActivityIndicator, Alert, Modal } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Picker } from "@react-native-picker/picker";
 import * as DocumentPicker from "expo-document-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -8,6 +8,7 @@ import { supabase } from "../../lib/supabase";
 
 export default function PantallaAltas() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [subiendo, setSubiendo] = useState(false);
@@ -23,6 +24,11 @@ export default function PantallaAltas() {
   const [modalFamilia, setModalFamilia] = useState(false);
   const [modalMarca, setModalMarca] = useState(false);
   const [modalCentro, setModalCentro] = useState(false);
+  const [modalEscanear, setModalEscanear] = useState(false);
+  
+  // MODAL DE CONFIRMACIÓN PARA ELIMINAR
+  const [modalConfirmarEliminar, setModalConfirmarEliminar] = useState(false);
+  const [itemAEliminar, setItemAEliminar] = useState<{ tipo: string; id: number; nombre: string } | null>(null);
 
   // INPUTS DE MODALES
   const [newFamilia, setNewFamilia] = useState("");
@@ -46,6 +52,13 @@ export default function PantallaAltas() {
     correo_electronico: "",
   });
 
+  // ========== RECIBIR DOCUMENTO DE /escaner ==========
+  useEffect(() => {
+    if (params.documento) {
+      setForm({ ...form, nombre_archivo: params.documento as string });
+    }
+  }, [params.documento]);
+
   // ========== CARGAR CATÁLOGOS ==========
   useEffect(() => {
     cargarCatalogos();
@@ -68,7 +81,31 @@ export default function PantallaAltas() {
     }
   };
 
-  // ========== AGREGAR FAMILIA ==========
+  // ========== ELIMINAR FAMILIA ==========
+  const handleEliminarFamilia = async (id: number, familia: string) => {
+    setItemAEliminar({ tipo: "familia", id, nombre: familia });
+    setModalConfirmarEliminar(true);
+  };
+
+  // ========== ELIMINAR FAMILIA CONFIRMADO ==========
+  const confirmarEliminarFamilia = async () => {
+    if (!itemAEliminar) return;
+    try {
+      const { error } = await supabase
+        .from("familia")
+        .delete()
+        .eq("id", itemAEliminar.id);
+
+      if (error) throw error;
+
+      setFamilias(familias.filter((f) => f.id !== itemAEliminar.id));
+      alert("✅ Familia eliminada");
+      setModalConfirmarEliminar(false);
+      setItemAEliminar(null);
+    } catch (error: any) {
+      alert("❌ Error al eliminar: " + error.message);
+    }
+  };
   const handleAddFamilia = async () => {
     if (!newFamilia.trim()) {
       alert("⚠️ Ingresa el nombre de la familia");
@@ -77,14 +114,14 @@ export default function PantallaAltas() {
 
     setLoadingFamilia(true);
     try {
+      const familiaMAYUS = newFamilia.trim().toUpperCase();
       const { data, error } = await supabase
         .from("familia")
-        .insert([{ familia: newFamilia.trim() }])
+        .insert([{ familia: familiaMAYUS }])
         .select();
 
       if (error) throw error;
 
-      // Agregar a lista local
       if (data) {
         setFamilias([...familias, data[0]]);
         setForm({ ...form, tipo: data[0].familia });
@@ -100,7 +137,31 @@ export default function PantallaAltas() {
     }
   };
 
-  // ========== AGREGAR MARCA ==========
+  // ========== ELIMINAR MARCA ==========
+  const handleEliminarMarca = async (id: number, marca: string) => {
+    setItemAEliminar({ tipo: "marca", id, nombre: marca });
+    setModalConfirmarEliminar(true);
+  };
+
+  // ========== ELIMINAR MARCA CONFIRMADO ==========
+  const confirmarEliminarMarca = async () => {
+    if (!itemAEliminar) return;
+    try {
+      const { error } = await supabase
+        .from("marca")
+        .delete()
+        .eq("id", itemAEliminar.id);
+
+      if (error) throw error;
+
+      setMarcas(marcas.filter((m) => m.id !== itemAEliminar.id));
+      alert("✅ Marca eliminada");
+      setModalConfirmarEliminar(false);
+      setItemAEliminar(null);
+    } catch (error: any) {
+      alert("❌ Error al eliminar: " + error.message);
+    }
+  };
   const handleAddMarca = async () => {
     if (!newMarca.trim()) {
       alert("⚠️ Ingresa el nombre de la marca");
@@ -109,14 +170,14 @@ export default function PantallaAltas() {
 
     setLoadingMarca(true);
     try {
+      const marcaMAYUS = newMarca.trim().toUpperCase();
       const { data, error } = await supabase
         .from("marca")
-        .insert([{ marca: newMarca.trim() }])
+        .insert([{ marca: marcaMAYUS }])
         .select();
 
       if (error) throw error;
 
-      // Agregar a lista local
       if (data) {
         setMarcas([...marcas, data[0]]);
         setForm({ ...form, marca: data[0].marca });
@@ -132,7 +193,31 @@ export default function PantallaAltas() {
     }
   };
 
-  // ========== AGREGAR CENTRO ==========
+  // ========== ELIMINAR CENTRO ==========
+  const handleEliminarCentro = async (id: number, centro: string) => {
+    setItemAEliminar({ tipo: "centro", id, nombre: centro });
+    setModalConfirmarEliminar(true);
+  };
+
+  // ========== ELIMINAR CENTRO CONFIRMADO ==========
+  const confirmarEliminarCentro = async () => {
+    if (!itemAEliminar) return;
+    try {
+      const { error } = await supabase
+        .from("centro")
+        .delete()
+        .eq("id", itemAEliminar.id);
+
+      if (error) throw error;
+
+      setCentros(centros.filter((c) => c.id !== itemAEliminar.id));
+      alert("✅ Establecimiento eliminado");
+      setModalConfirmarEliminar(false);
+      setItemAEliminar(null);
+    } catch (error: any) {
+      alert("❌ Error al eliminar: " + error.message);
+    }
+  };
   const handleAddCentro = async () => {
     if (!newCentro.trim()) {
       alert("⚠️ Ingresa el nombre del establecimiento");
@@ -141,14 +226,14 @@ export default function PantallaAltas() {
 
     setLoadingCentro(true);
     try {
+      const centroMAYUS = newCentro.trim().toUpperCase();
       const { data, error } = await supabase
         .from("centro")
-        .insert([{ centro: newCentro.trim() }])
+        .insert([{ centro: centroMAYUS }])
         .select();
 
       if (error) throw error;
 
-      // Agregar a lista local
       if (data) {
         setCentros([...centros, data[0]]);
         setForm({ ...form, centro_compra: data[0].centro });
@@ -170,11 +255,21 @@ export default function PantallaAltas() {
     if (!isNaN(newDate.getTime())) setFecha(newDate);
   };
 
-  // ========== ORIGINAL: Subir PDF ==========
-  const seleccionarYSubirPDF = async () => {
+  // ========== ESCANEAR TICKET: Abre Modal ==========
+  const handleAbrirModalEscaneo = () => {
+    setModalEscanear(true);
+  };
+
+  // ========== FUNCIÓN DENTRO DEL MODAL: Seleccionar documento ==========
+  const handleEscanearDocumento = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({ type: "application/pdf" });
+      const result = await DocumentPicker.getDocumentAsync({ 
+        type: ["image/*", "application/pdf"],
+        copyToCacheDirectory: true,
+      });
+      
       if (result.canceled) return;
+      
       setSubiendo(true);
       const archivo = result.assets[0];
       const nombreUnico = `${Date.now()}_${archivo.name}`;
@@ -185,10 +280,12 @@ export default function PantallaAltas() {
 
       const { error } = await supabase.storage.from("garantias").upload(nombreUnico, fileBody);
       if (error) throw error;
+      
       setForm({ ...form, nombre_archivo: nombreUnico });
-      alert("✅ Ticket anexado.");
+      alert("✅ Documento capturado y anexado correctamente.");
+      setModalEscanear(false);
     } catch (error: any) {
-      alert("Error PDF: " + error.message);
+      alert("Error al capturar documento: " + error.message);
     } finally {
       setSubiendo(false);
     }
@@ -236,42 +333,68 @@ export default function PantallaAltas() {
         <Text style={styles.mainTitle}>Registro de Garantía</Text>
 
         <View style={styles.card}>
-          {/* ========== FAMILIA CON BOTÓN + ========== */}
-          <View style={styles.labelRow}>
-            <Text style={styles.xlLabel}>FAMILIA *</Text>
+          {/* ========== FAMILIA CON BOTÓN + Y - AL MISMO NIVEL ==========  */}
+          <Text style={styles.xlLabel}>FAMILIA *</Text>
+          <View style={styles.pickerWithButton}>
+            <View style={styles.xlPickerBox}>
+              <Picker selectedValue={form.tipo} onValueChange={(v) => setForm({ ...form, tipo: v })} style={{ height: 80, fontSize: 22 }}>
+                <Picker.Item label="Selecciona..." value="" />
+                {familias.map((f) => (
+                  <Picker.Item key={f.id} label={f.familia} value={f.familia} />
+                ))}
+              </Picker>
+            </View>
             <Pressable
               style={styles.addButton}
               onPress={() => setModalFamilia(true)}
             >
               <Text style={styles.addButtonText}>+</Text>
             </Pressable>
-          </View>
-          <View style={styles.xlPickerBox}>
-            <Picker selectedValue={form.tipo} onValueChange={(v) => setForm({ ...form, tipo: v })} style={{ height: 80, fontSize: 22 }}>
-              <Picker.Item label="Selecciona..." value="" />
-              {familias.map((f) => (
-                <Picker.Item key={f.id} label={f.familia} value={f.familia} />
-              ))}
-            </Picker>
+            <Pressable
+              style={[styles.addButton, styles.deleteButton]}
+              onPress={() => {
+                const familia = familias.find(f => f.familia === form.tipo);
+                if (familia) {
+                  handleEliminarFamilia(familia.id, familia.familia);
+                } else {
+                  alert("⚠️ Selecciona una familia primero");
+                }
+              }}
+            >
+              <Text style={styles.deleteButtonText}>−</Text>
+            </Pressable>
           </View>
 
-          {/* ========== MARCA CON BOTÓN + ========== */}
-          <View style={styles.labelRow}>
-            <Text style={styles.xlLabel}>MARCA *</Text>
+          {/* ========== MARCA CON BOTÓN + Y - AL MISMO NIVEL ==========  */}
+          <Text style={styles.xlLabel}>MARCA *</Text>
+          <View style={styles.pickerWithButton}>
+            <View style={styles.xlPickerBox}>
+              <Picker selectedValue={form.marca} onValueChange={(v) => setForm({ ...form, marca: v })} style={{ height: 80, fontSize: 22 }}>
+                <Picker.Item label="Selecciona..." value="" />
+                {marcas.map((m) => (
+                  <Picker.Item key={m.id} label={m.marca} value={m.marca} />
+                ))}
+              </Picker>
+            </View>
             <Pressable
               style={styles.addButton}
               onPress={() => setModalMarca(true)}
             >
               <Text style={styles.addButtonText}>+</Text>
             </Pressable>
-          </View>
-          <View style={styles.xlPickerBox}>
-            <Picker selectedValue={form.marca} onValueChange={(v) => setForm({ ...form, marca: v })} style={{ height: 80, fontSize: 22 }}>
-              <Picker.Item label="Selecciona..." value="" />
-              {marcas.map((m) => (
-                <Picker.Item key={m.id} label={m.marca} value={m.marca} />
-              ))}
-            </Picker>
+            <Pressable
+              style={[styles.addButton, styles.deleteButton]}
+              onPress={() => {
+                const marca = marcas.find(m => m.marca === form.marca);
+                if (marca) {
+                  handleEliminarMarca(marca.id, marca.marca);
+                } else {
+                  alert("⚠️ Selecciona una marca primero");
+                }
+              }}
+            >
+              <Text style={styles.deleteButtonText}>−</Text>
+            </Pressable>
           </View>
 
           <Text style={styles.xlLabel}>MODELO *</Text>
@@ -284,32 +407,48 @@ export default function PantallaAltas() {
 
           <View style={styles.divider} />
 
-          {/* ========== ESTABLECIMIENTO CON BOTÓN + ========== */}
-          <View style={styles.labelRow}>
-            <Text style={styles.xlLabel}>ESTABLECIMIENTO *</Text>
+          {/* ========== ESTABLECIMIENTO CON BOTÓN + Y - AL MISMO NIVEL ==========  */}
+          <Text style={styles.xlLabel}>ESTABLECIMIENTO *</Text>
+          <View style={styles.pickerWithButton}>
+            <View style={styles.xlPickerBox}>
+              <Picker
+                selectedValue={form.centro_compra}
+                onValueChange={(v) => setForm({ ...form, centro_compra: v })}
+                style={{ height: 80, fontSize: 22 }}
+              >
+                <Picker.Item label="Selecciona..." value="" />
+                {centros.map((c) => (
+                  <Picker.Item key={c.id} label={c.centro} value={c.centro} />
+                ))}
+              </Picker>
+            </View>
             <Pressable
               style={styles.addButton}
               onPress={() => setModalCentro(true)}
             >
               <Text style={styles.addButtonText}>+</Text>
             </Pressable>
-          </View>
-          <View style={styles.xlPickerBox}>
-            <Picker
-              selectedValue={form.centro_compra}
-              onValueChange={(v) => setForm({ ...form, centro_compra: v })}
-              style={{ height: 80, fontSize: 22 }}
+            <Pressable
+              style={[styles.addButton, styles.deleteButton]}
+              onPress={() => {
+                const centro = centros.find(c => c.centro === form.centro_compra);
+                if (centro) {
+                  handleEliminarCentro(centro.id, centro.centro);
+                } else {
+                  alert("⚠️ Selecciona un establecimiento primero");
+                }
+              }}
             >
-              <Picker.Item label="Selecciona..." value="" />
-              {centros.map((c) => (
-                <Picker.Item key={c.id} label={c.centro} value={c.centro} />
-              ))}
-            </Picker>
+              <Text style={styles.deleteButtonText}>−</Text>
+            </Pressable>
           </View>
 
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <Text style={styles.xlLabel}>FECHA COMPRA *</Text>
+          <View style={styles.rowLabels}>
+            <Text style={[styles.xlLabel, { flex: 1 }]}>FECHA COMPRA *</Text>
+            <Text style={[styles.xlLabel, { flex: 1, marginLeft: 20 }]}>IMPORTE (€) *</Text>
+          </View>
+          <View style={styles.rowInputs}>
+            <View style={styles.halfInput}>
               {Platform.OS === "web" ? (
                 <input
                   type="date"
@@ -320,8 +459,11 @@ export default function PantallaAltas() {
                     borderRadius: 15,
                     border: "3px solid #cbd5e1",
                     width: "100%",
+                    height: 80,
                     fontSize: 22,
                     backgroundColor: "#f0f4f8",
+                    marginRight: 10,
+                    boxSizing: "border-box",
                   }}
                 />
               ) : (
@@ -330,10 +472,9 @@ export default function PantallaAltas() {
                 </Pressable>
               )}
             </View>
-            <View style={styles.half}>
-              <Text style={styles.xlLabel}>IMPORTE (€) *</Text>
+            <View style={styles.halfInput}>
               <TextInput
-                style={styles.xlInput}
+                style={[styles.xlInput, { marginLeft: 10, marginBottom: 0, height: 80 }]}
                 keyboardType="numeric"
                 placeholder="0.00"
                 value={form.importe}
@@ -352,20 +493,29 @@ export default function PantallaAltas() {
             onChangeText={(t) => setForm({ ...form, observaciones: t })}
           />
 
-          <Pressable style={[styles.btnFile, form.nombre_archivo ? styles.btnFileOk : null]} onPress={seleccionarYSubirPDF} disabled={subiendo}>
-            <Text style={styles.btnFileText}>{form.nombre_archivo ? `✅ TICKET ADJUNTO` : "📁 SUBIR TICKET PDF"}</Text>
+          <Pressable style={[styles.btnFile, form.nombre_archivo ? styles.btnFileOk : null]} onPress={handleAbrirModalEscaneo} disabled={subiendo}>
+            <Text style={styles.btnFileText}>
+              {form.nombre_archivo 
+                ? `📎 DOCUMENTACIÓN ADJUNTADA PREVIA` 
+                : "📸 ESCANEAR TICKET"}
+            </Text>
           </Pressable>
 
           <Pressable style={styles.btnSave} onPress={handleSave} disabled={loading}>
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnSaveText}>REGISTRAR GARANTÍA</Text>}
           </Pressable>
+
+          {/* ========== BOTÓN VOLVER AL MENÚ ==========  */}
+          <Pressable style={styles.btnBack} onPress={() => router.push("/")}>
+            <Text style={styles.btnBackText}>← Volver al Menú Principal</Text>
+          </Pressable>
         </View>
       </View>
 
-      {/* ========== MODAL FAMILIA ========== */}
-      <Modal visible={modalFamilia} transparent={true} animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+      {/* ========== MODAL FAMILIA (PEQUEÑO) ========== */}
+      <Modal visible={modalFamilia} transparent={true} animationType="fade">
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Agregar Nueva Familia</Text>
               <Pressable onPress={() => { setModalFamilia(false); setNewFamilia(""); }}>
@@ -375,7 +525,7 @@ export default function PantallaAltas() {
 
             <TextInput
               style={styles.modalInput}
-              placeholder="Ej: Televisor, Ordenador, Refrigerador..."
+              placeholder="Ej: Televisor, Ordenador..."
               placeholderTextColor="#999"
               value={newFamilia}
               onChangeText={setNewFamilia}
@@ -389,7 +539,7 @@ export default function PantallaAltas() {
               {loadingFamilia ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.modalBtnText}>✅ Guardar Familia</Text>
+                <Text style={styles.modalBtnText}>✅ Guardar</Text>
               )}
             </Pressable>
 
@@ -403,10 +553,10 @@ export default function PantallaAltas() {
         </View>
       </Modal>
 
-      {/* ========== MODAL MARCA ========== */}
-      <Modal visible={modalMarca} transparent={true} animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+      {/* ========== MODAL MARCA (PEQUEÑO) ========== */}
+      <Modal visible={modalMarca} transparent={true} animationType="fade">
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Agregar Nueva Marca</Text>
               <Pressable onPress={() => { setModalMarca(false); setNewMarca(""); }}>
@@ -416,7 +566,7 @@ export default function PantallaAltas() {
 
             <TextInput
               style={styles.modalInput}
-              placeholder="Ej: Samsung, LG, Sony, Dell..."
+              placeholder="Ej: Samsung, LG, Sony..."
               placeholderTextColor="#999"
               value={newMarca}
               onChangeText={setNewMarca}
@@ -430,7 +580,7 @@ export default function PantallaAltas() {
               {loadingMarca ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.modalBtnText}>✅ Guardar Marca</Text>
+                <Text style={styles.modalBtnText}>✅ Guardar</Text>
               )}
             </Pressable>
 
@@ -444,12 +594,12 @@ export default function PantallaAltas() {
         </View>
       </Modal>
 
-      {/* ========== MODAL CENTRO ========== */}
-      <Modal visible={modalCentro} transparent={true} animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+      {/* ========== MODAL CENTRO (PEQUEÑO) ========== */}
+      <Modal visible={modalCentro} transparent={true} animationType="fade">
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Agregar Nuevo Establecimiento</Text>
+              <Text style={styles.modalTitle}>Agregar Establecimiento</Text>
               <Pressable onPress={() => { setModalCentro(false); setNewCentro(""); }}>
                 <Text style={styles.closeX}>✕</Text>
               </Pressable>
@@ -457,7 +607,7 @@ export default function PantallaAltas() {
 
             <TextInput
               style={styles.modalInput}
-              placeholder="Ej: MediaMarkt, Carrefour, Fnac..."
+              placeholder="Ej: MediaMarkt, Carrefour..."
               placeholderTextColor="#999"
               value={newCentro}
               onChangeText={setNewCentro}
@@ -471,7 +621,7 @@ export default function PantallaAltas() {
               {loadingCentro ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.modalBtnText}>✅ Guardar Establecimiento</Text>
+                <Text style={styles.modalBtnText}>✅ Guardar</Text>
               )}
             </Pressable>
 
@@ -481,6 +631,103 @@ export default function PantallaAltas() {
             >
               <Text style={styles.modalBtnCancelText}>Cancelar</Text>
             </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ========== MODAL ESCANEAR DOCUMENTO (PRINCIPAL) ========== */}
+      <Modal visible={modalEscanear} transparent={true} animationType="slide">
+        <View style={styles.centeredView}>
+          <View style={[styles.modalView, styles.modalEscaneoView]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Escanear Documento</Text>
+              <Pressable onPress={() => setModalEscanear(false)}>
+                <Text style={styles.closeX}>✕</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.escaneoContent}>
+              <Text style={styles.escaneoInfo}>
+                {Platform.OS === "web" 
+                  ? "Selecciona un documento desde tu PC" 
+                  : "Captura una foto del ticket con tu cámara"}
+              </Text>
+
+              {Platform.OS === "web" ? (
+                <>
+                  <Text style={styles.escaneoIcon}>📁</Text>
+                  <Text style={styles.escaneoSubtext}>Haz click en el botón para seleccionar un archivo</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.escaneoIcon}>📸</Text>
+                  <Text style={styles.escaneoSubtext}>Abre tu cámara para fotografiar el ticket</Text>
+                </>
+              )}
+            </View>
+
+            <Pressable
+              style={[styles.modalBtn, styles.escaneoBtn, subiendo && styles.modalBtnDisabled]}
+              onPress={handleEscanearDocumento}
+              disabled={subiendo}
+            >
+              {subiendo ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.modalBtnText}>
+                  {Platform.OS === "web" ? "📁 Seleccionar Archivo" : "📸 Abrir Cámara"}
+                </Text>
+              )}
+            </Pressable>
+
+            <Pressable
+              style={styles.modalBtnCancel}
+              onPress={() => setModalEscanear(false)}
+              disabled={subiendo}
+            >
+              <Text style={styles.modalBtnCancelText}>Cancelar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ========== MODAL CONFIRMAR ELIMINACIÓN ==========  */}
+      <Modal visible={modalConfirmarEliminar} transparent={true} animationType="fade">
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>⚠️ Confirmar Eliminación</Text>
+            
+            <Text style={styles.confirmText}>
+              ¿Estás seguro de que quieres eliminar "{itemAEliminar?.nombre}"?
+            </Text>
+            <Text style={styles.warningText}>Esta acción no se puede deshacer</Text>
+
+            <View style={styles.buttonGroupConfirm}>
+              <Pressable
+                style={styles.cancelBtn}
+                onPress={() => {
+                  setModalConfirmarEliminar(false);
+                  setItemAEliminar(null);
+                }}
+              >
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.deleteConfirmBtn}
+                onPress={() => {
+                  if (itemAEliminar?.tipo === "familia") {
+                    confirmarEliminarFamilia();
+                  } else if (itemAEliminar?.tipo === "marca") {
+                    confirmarEliminarMarca();
+                  } else if (itemAEliminar?.tipo === "centro") {
+                    confirmarEliminarCentro();
+                  }
+                }}
+              >
+                <Text style={styles.deleteConfirmBtnText}>Eliminar</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -495,15 +742,29 @@ const styles = StyleSheet.create({
   mainTitle: { fontSize: 42, fontWeight: "900", color: "#102a43", marginBottom: 30, textAlign: "center" },
   card: { backgroundColor: "#fff", borderRadius: 30, padding: 40, width: "100%", elevation: 10 },
 
-  // ========== LABEL ROW CON BOTÓN + ==========
-  labelRow: {
+  // ========== LABEL CON BOTÓN AL LADO ==========
+  labelWithButton: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
   },
 
+  // ========== PICKER CON BOTÓN AL MISMO NIVEL ==========
+  pickerWithButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 30,
+  },
+
   xlLabel: { fontSize: 18, fontWeight: "800", color: "#243b53" },
+
+  rowLabels: {
+    flexDirection: "row",
+    marginBottom: 12,
+  },
 
   addButton: {
     backgroundColor: "#10b981",
@@ -521,15 +782,78 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 
+  deleteButton: {
+    backgroundColor: "#ef4444",
+  },
+
+  deleteButtonText: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+
+  // ========== MODAL CONFIRMACIÓN ==========
+  confirmText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1f2937",
+    textAlign: "center",
+    marginBottom: 10,
+    marginTop: 15,
+  },
+
+  warningText: {
+    fontSize: 13,
+    color: "#ef4444",
+    textAlign: "center",
+    marginBottom: 25,
+  },
+
+  buttonGroupConfirm: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 20,
+  },
+
+  cancelBtn: {
+    flex: 1,
+    backgroundColor: "#f0f4f8",
+    borderWidth: 2,
+    borderColor: "#cbd5e1",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+
+  cancelBtnText: {
+    color: "#6b7280",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  deleteConfirmBtn: {
+    flex: 1,
+    backgroundColor: "#ef4444",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+
+  deleteConfirmBtnText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
   // ========== INPUTS ORIGINALES ==========
   xlPickerBox: {
     backgroundColor: "#f0f4f8",
     borderWidth: 3,
     borderColor: "#cbd5e1",
     borderRadius: 15,
-    marginBottom: 30,
     height: 80,
     justifyContent: "center",
+    flex: 1,
   },
 
   xlInput: {
@@ -558,6 +882,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap" },
   half: { width: Platform.OS === "web" ? "48%" : "100%" },
 
+  rowInputs: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 30, gap: 10 },
+  halfInput: { flex: 1, height: 80 },
+
   btnFile: { borderStyle: "dashed", borderColor: "#3b82f6", borderWidth: 3, padding: 30, borderRadius: 20, alignItems: "center", marginVertical: 30 },
   btnFileOk: { backgroundColor: "#dcfce7", borderColor: "#22c55e" },
   btnFileText: { color: "#1e40af", fontWeight: "900", fontSize: 18 },
@@ -565,37 +892,39 @@ const styles = StyleSheet.create({
   btnSave: { backgroundColor: "#2563eb", padding: 25, borderRadius: 20, alignItems: "center" },
   btnSaveText: { color: "#fff", fontWeight: "900", fontSize: 24 },
 
-  // ========== MODAL STYLES ==========
-  modalOverlay: {
+  // ========== MODAL STYLES (PEQUEÑOS) ==========
+  centeredView: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "flex-end",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
 
-  modalContent: {
+  modalView: {
+    width: "90%",
+    maxWidth: 400,
     backgroundColor: "#fff",
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    padding: 30,
-    paddingBottom: 50,
+    borderRadius: 20,
+    padding: 25,
+    elevation: 5,
   },
 
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 25,
+    marginBottom: 20,
   },
 
   modalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "800",
     color: "#102a43",
     flex: 1,
   },
 
   closeX: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#999",
   },
@@ -605,18 +934,18 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#cbd5e1",
     borderRadius: 12,
-    padding: 18,
-    fontSize: 18,
-    marginBottom: 20,
+    padding: 15,
+    fontSize: 16,
+    marginBottom: 15,
     color: "#333",
   },
 
   modalBtn: {
     backgroundColor: "#10b981",
-    padding: 18,
+    padding: 15,
     borderRadius: 12,
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 10,
     elevation: 3,
   },
 
@@ -631,7 +960,7 @@ const styles = StyleSheet.create({
   },
 
   modalBtnCancel: {
-    padding: 15,
+    padding: 12,
     borderRadius: 12,
     alignItems: "center",
     borderWidth: 1,
@@ -642,5 +971,62 @@ const styles = StyleSheet.create({
     color: "#666",
     fontSize: 16,
     fontWeight: "600",
+  },
+
+  // ========== BOTÓN VOLVER ==========
+  btnBack: {
+    marginTop: 30,
+    paddingVertical: 18,
+    paddingHorizontal: 30,
+    borderRadius: 15,
+    backgroundColor: "#f0f4f8",
+    borderWidth: 2,
+    borderColor: "#3b82f6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  btnBackText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#3b82f6",
+    textAlign: "center",
+  },
+
+  // ========== MODAL ESCANEO ==========
+  modalEscaneoView: {
+    maxWidth: 450,
+    width: "95%",
+  },
+
+  escaneoContent: {
+    alignItems: "center",
+    paddingVertical: 40,
+    marginBottom: 20,
+  },
+
+  escaneoIcon: {
+    fontSize: 80,
+    marginBottom: 20,
+  },
+
+  escaneoInfo: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#102a43",
+    textAlign: "center",
+    marginBottom: 15,
+  },
+
+  escaneoSubtext: {
+    fontSize: 14,
+    color: "#6b7280",
+    textAlign: "center",
+  },
+
+  escaneoBtn: {
+    backgroundColor: "#3b82f6",
+    paddingVertical: 18,
+    paddingHorizontal: 30,
   },
 });

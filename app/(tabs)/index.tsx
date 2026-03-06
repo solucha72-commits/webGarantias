@@ -11,12 +11,12 @@ export default function Home() {
         <View style={styles.card}>
           <View style={styles.headerSection}>
             <Text style={styles.title}>Garantías</Text>
-            <Text style={styles.subtitle}>Gestión inteligente de tus productos</Text>
+            <Text style={styles.subtitle}>GESTOR DOCUMENTAL GARANTIAS</Text>
           </View>
 
           <View style={styles.buttonGrid}>
             {/* 1. Botón Escanear (Lógica de cámara pendiente) */}
-            <Pressable style={({ pressed }) => [styles.scanButton, pressed && { opacity: 0.8 }]} onPress={() => console.log("Abrir Cámara")}>
+            <Pressable style={({ pressed }) => [styles.scanButton, pressed && { opacity: 0.8 }]} onPress={() => router.push("/escaner")}>
               <Text style={styles.buttonText}>📷 Escanear Ticket</Text>
             </Pressable>
 
@@ -33,7 +33,7 @@ export default function Home() {
             </Pressable>
           </View>
 
-          <Text style={styles.footerText}>Versión 1.0.2 - 2026</Text>
+          <Text style={styles.footerText}>Versión 1.1.6 - 2026</Text>
         </View>
       </View>
     </ScrollView>
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   listButton: {
     width: "100%",
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#eab398",
     paddingVertical: 18,
     borderRadius: 18,
     alignItems: "center",
