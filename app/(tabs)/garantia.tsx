@@ -79,7 +79,7 @@ export default function GarantiaDetalle() {
       [
         {
           text: "Cancelar",
-          onPress: () => {},
+          onPress: () => console.log("Cancelado"),
           style: "cancel",
         },
         {
@@ -87,16 +87,24 @@ export default function GarantiaDetalle() {
           onPress: async () => {
             try {
               setEditando(true);
+              const idNumber = parseInt(id as string);
+              
               const { error } = await supabase
                 .from("garantias")
                 .delete()
-                .eq("id", id);
+                .eq("id", idNumber);
 
-              if (error) throw error;
+              if (error) {
+                console.error("Error Supabase:", error);
+                throw error;
+              }
 
               alert("✅ Garantía eliminada correctamente");
-              router.push("/formulario");
+              setTimeout(() => {
+                router.push("/formulario");
+              }, 500);
             } catch (error: any) {
+              console.error("Error completo:", error);
               alert("❌ Error al eliminar: " + error.message);
             } finally {
               setEditando(false);
@@ -249,8 +257,7 @@ export default function GarantiaDetalle() {
                   <TextInput
                     style={styles.textInput}
                     value={formEditar?.modelo || ""}
-                    onChangeText={(text) => setFormEditar({ ...formEditar, modelo: text })}
-                    placeholder="Modelo"
+                    onChangeText={(text) => setFormEditar({ ...formEditar, modelo: text.toUpperCase() })}
                   />
                 </View>
 
@@ -261,29 +268,29 @@ export default function GarantiaDetalle() {
                     style={styles.textInput}
                     value={formEditar?.importe || ""}
                     onChangeText={(text) => setFormEditar({ ...formEditar, importe: text })}
-                    placeholder="0.00"
-                    keyboardType="numeric"
+                    keyboardType="decimal-pad"
                   />
                 </View>
 
                 {/* Duración */}
                 <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Duración Garantía (años)</Text>
+                  <Text style={styles.formLabel}>Duración (años)</Text>
                   <TextInput
                     style={styles.textInput}
                     value={formEditar?.duracion_garantia || ""}
                     onChangeText={(text) => setFormEditar({ ...formEditar, duracion_garantia: text })}
-                    placeholder="1"
-                    keyboardType="numeric"
+                    keyboardType="number-pad"
                   />
                 </View>
 
                 {/* Centro */}
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>Centro Compra</Text>
-                  <View style={styles.formInput}>
-                    <Text style={styles.formValue}>{formEditar?.centro_compra || "-"}</Text>
-                  </View>
+                  <TextInput
+                    style={styles.textInput}
+                    value={formEditar?.centro_compra || ""}
+                    onChangeText={(text) => setFormEditar({ ...formEditar, centro_compra: text.toUpperCase() })}
+                  />
                 </View>
 
                 {/* Observaciones */}
@@ -293,38 +300,25 @@ export default function GarantiaDetalle() {
                     style={[styles.textInput, { height: 80, textAlignVertical: "top" }]}
                     value={formEditar?.observaciones || ""}
                     onChangeText={(text) => setFormEditar({ ...formEditar, observaciones: text })}
-                    placeholder="Notas..."
                     multiline
                   />
                 </View>
               </ScrollView>
 
               <View style={styles.modalEditButtons}>
-                <Pressable
-                  style={styles.btnCancelar}
-                  onPress={() => setModalEditar(false)}
-                >
+                <Pressable style={styles.btnCancelar} onPress={() => setModalEditar(false)}>
                   <Text style={styles.btnCancelarText}>Cancelar</Text>
                 </Pressable>
-
-                <Pressable
-                  style={[styles.btnGuardar, editando && { opacity: 0.6 }]}
-                  onPress={handleGuardarCambios}
-                  disabled={editando}
-                >
-                  {editando ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.btnGuardarText}>💾 Guardar Cambios</Text>
-                  )}
+                <Pressable style={styles.btnGuardar} onPress={handleGuardarCambios} disabled={editando}>
+                  <Text style={styles.btnGuardarText}>{editando ? "Guardando..." : "✅ Guardar"}</Text>
                 </Pressable>
               </View>
             </View>
           </View>
         </Modal>
 
-        {/* Visor Modal */}
-        <Modal visible={modalVisible} transparent={true} animationType="slide">
+        {/* ========== MODAL VER DOCUMENTO ========== */}
+        <Modal visible={modalVisible} transparent={true} animationType="fade">
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>

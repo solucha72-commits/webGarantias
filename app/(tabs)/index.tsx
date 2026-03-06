@@ -57,14 +57,14 @@ const styles = StyleSheet.create({
   },
   screen: {
     width: "100%",
-    maxWidth: 800,
+    maxWidth: Platform.OS === "web" ? 800 : "100%",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 20,
   },
   card: {
-    // Ancho ajustado para Web (500px) y móvil (100%)
-    width: Platform.OS === "web" ? 500 : "100%",
+    // Ancho ajustado para Web (500px) y móvil (100% - padding)
+    width: "100%",
     paddingVertical: 60,
     paddingHorizontal: 45,
     backgroundColor: "#ffffff",
