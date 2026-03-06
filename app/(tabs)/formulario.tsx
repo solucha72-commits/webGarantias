@@ -1,9 +1,7 @@
-import { View, Text, StyleSheet, FlatList, Pressable } from "react-native";
+import { View, Text, StyleSheet, FlatList, Pressable, Platform } from "react-native";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
-import { formatFecha } from "@/lib/utils/date";
-
 
 type Garantia = {
   id: number;
@@ -22,53 +20,115 @@ export default function Formulario() {
   useEffect(() => {
     supabase
       .from("garantias")
-      .select("id,tipo,marca,modelo,importe,duracion_garantia,centro_compra")
+      .select("id,tipo,marca,modelo,importe,duracion_garantia,centro_compra,nombre_archivo")
       .order("id", { ascending: false })
       .then(({ data }) => setGarantias(data ?? []));
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Garantías</Text>
+    <View style={styles.mainContainer}>
+      <View style={styles.contentWrapper}>
+        <Text style={styles.header}>Garantías Guardadas</Text>
 
-      <FlatList
-        data={garantias}
-        keyExtractor={(item) => item.id.toString()}
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-        renderItem={({ item }) => (
-          <Pressable style={styles.row} onPress={() => router.push({ pathname: "/garantia", params: { id: item.id } })}>
-            <View>
-              <Text style={styles.title}>
-                {item.tipo} · {item.marca}
-              </Text>
-              <Text style={styles.subtitle}>{item.modelo}</Text>
-              <Text style={styles.meta}>{item.centro_compra}</Text>
-            </View>
-            <Text style={styles.price}>{item.importe} €</Text>
-          </Pressable>
-        )}
-      />
+        <FlatList
+          data={garantias}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.listPadding}
+          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          renderItem={({ item }) => (
+            <Pressable
+              style={({ pressed }) => [styles.row, pressed && { opacity: 0.8 }]}
+              onPress={() => router.push({ pathname: "/garantia", params: { id: item.id } })}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title}>
+                  {item.tipo} · {item.marca}
+                </Text>
+                <Text style={styles.subtitle}>{item.modelo}</Text>
+              </View>
+              <View style={styles.priceContainer}>
+                <Text style={styles.price}>{item.importe}€</Text>
+              </View>
+            </Pressable>
+          )}
+        />
 
-      <Text style={styles.back} onPress={() => router.back()}>
-        ← Volver
-      </Text>
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backText}>← Volver</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f4f6f8", padding: 15 },
-  header: { fontSize: 26, fontWeight: "bold", textAlign: "center", marginBottom: 15 },
+  mainContainer: {
+    flex: 1,
+    backgroundColor: "#f4f6f8",
+    alignItems: "center", // Centra el bloque en la web
+  },
+  contentWrapper: {
+    flex: 1,
+    width: "100%",
+    // --- ESTE ES EL PUNTO INTERMEDIO ---
+    maxWidth: 1000, // Ni 320 ni pantalla completa. 850px es ideal para Web/Tablet.
+    paddingHorizontal: 25,
+    paddingTop: 30,
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 20,
+    paddingHorizontal: 5,
+  },
+  listPadding: {
+    paddingBottom: 40,
+  },
   row: {
     backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
+    padding: 20,
+    borderRadius: 12,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    // Sutil sombra
+    ...Platform.select({
+      web: {
+        boxShadow: "0px 2px 8px rgba(0,0,0,0.06)",
+        cursor: "pointer",
+      },
+      default: { elevation: 2 },
+    }),
   },
-  title: { fontSize: 16, fontWeight: "600" },
-  subtitle: { fontSize: 14, color: "#555" },
-  meta: { fontSize: 12, color: "#777" },
-  price: { fontSize: 16, fontWeight: "bold", color: "#2563eb" },
-  back: { textAlign: "center", marginTop: 15, color: "#2563eb" },
+  title: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1f2937",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#6b7280",
+    marginTop: 2,
+  },
+  priceContainer: {
+    backgroundColor: "#eff6ff",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  price: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#2563eb",
+  },
+  backButton: {
+    paddingVertical: 25,
+  },
+  backText: {
+    color: "#3b82f6",
+    fontSize: 16,
+    fontWeight: "500",
+    textAlign: "center",
+  },
 });
