@@ -149,9 +149,20 @@ export default function Informes() {
 
     setEnviando(true);
     try {
-      const formData = new FormData();
-      formData.append("email", email);
-      formData.append("message", `
+      // Usar EmailJS (sin verificación, funciona al instante)
+      const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          service_id: "service_h6p3pwa",
+          template_id: "template_1k9zx4b",
+          user_id: "t7QwuZBN3n9YR0bJg",
+          template_params: {
+            to_email: email,
+            subject: "📊 Informe de Garantías",
+            message: `
 📊 INFORME DE GARANTÍAS
 Generado: ${new Date().toLocaleDateString("es-ES")} ${new Date().toLocaleTimeString("es-ES")}
 
@@ -165,13 +176,12 @@ ${csv}
 
 ---
 Este informe fue generado automáticamente.
-      `);
-
-      // Usar FormSubmit.co (sin CORS, gratuito)
-      const response = await fetch("https://formspree.io/f/myzglzpq", {
-        method: "POST",
-        body: formData,
+            `,
+          },
+        }),
       });
+
+      const data = await response.json();
 
       if (response.ok) {
         alert(`✅ Informe enviado correctamente a ${email}`);
