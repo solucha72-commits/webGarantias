@@ -1,17 +1,29 @@
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export default async function handler(req, res) {
+  // Permitir CORS
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const { to, subject, csv, filtros } = req.body;
+    const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
     if (!to || !csv) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (!RESEND_API_KEY) {
+      return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
     }
 
     const htmlContent = `
@@ -68,25 +80,36 @@ export default async function handler(req, res) {
       </html>
     `;
 
-    const response = await resend.emails.send({
-      from: "Garantías <onboarding@resend.dev>",
-      to: to,
-      subject: subject || "📊 Informe de Garantías",
-      html: htmlContent,
+    // Llamar a la API de Resend directamente
+    const resendResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Garantías <onboarding@resend.dev>',
+        to: to,
+        subject: subject || '📊 Informe de Garantías',
+        html: htmlContent,
+      }),
     });
 
-    if (response.error) {
-      console.error("Resend error:", response.error);
-      return res.status(400).json({ error: response.error });
+    const data = await resendResponse.json();
+
+    if (!resendResponse.ok) {
+      console.error('Resend error:', data);
+      return res.status(400).json({ error: data.message || 'Error sending email' });
     }
 
     return res.status(200).json({ 
       success: true, 
-      id: response.data?.id,
+      id: data.id,
       message: `Informe enviado correctamente a ${to}`
     });
   } catch (error) {
-    console.error("Error:", error);
-    return res.status(500).json({ error: error.message });
+    console.error('Error:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    return res.status(500).json({ error: errorMsg });
   }
 }
