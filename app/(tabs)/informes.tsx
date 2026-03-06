@@ -26,9 +26,6 @@ export default function Informes() {
   const [marcas, setMarcas] = useState<string[]>([]);
   const [centros, setCentros] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [modalEmail, setModalEmail] = useState(false);
-  const [email, setEmail] = useState("");
-  const [enviando, setEnviando] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -134,52 +131,6 @@ export default function Informes() {
       alert("✅ CSV descargado correctamente");
     } else {
       alert("💾 CSV generado. Copiar al portapapeles:\n\n" + csv.substring(0, 100) + "...");
-    }
-  };
-
-  // ========== ENVIAR POR EMAIL ==========
-  const enviarPorEmail = async () => {
-    if (!email.trim()) {
-      alert("⚠️ Ingresa un correo electrónico");
-      return;
-    }
-
-    const csv = generarCSV();
-    if (!csv) return;
-
-    setEnviando(true);
-    try {
-      // Llamar a la API serverless en Vercel
-      const response = await fetch("/api/send-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          to: email,
-          subject: "📊 Informe de Garantías",
-          csv: csv,
-          filtros: {
-            familia: filtroTipo || "Todas",
-            marca: filtroMarca || "Todas",
-            centro: filtroCentro || "Todos",
-          },
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        alert(`✅ ${data.message}`);
-        setModalEmail(false);
-        setEmail("");
-      } else {
-        alert(`❌ Error: ${data.error || "No se pudo enviar el email"}`);
-      }
-    } catch (error: any) {
-      alert(`❌ Error: ${error.message}`);
-    } finally {
-      setEnviando(false);
     }
   };
 
@@ -318,14 +269,6 @@ export default function Informes() {
           >
             <Text style={styles.btnCSVText}>📥 Descargar CSV</Text>
           </Pressable>
-
-          <Pressable
-            style={styles.btnEmail}
-            onPress={() => setModalEmail(true)}
-            disabled={garantiasFiltradas.length === 0}
-          >
-            <Text style={styles.btnEmailText}>📧 Enviar por Email</Text>
-          </Pressable>
         </View>
 
         <Pressable
@@ -335,45 +278,6 @@ export default function Informes() {
           <Text style={styles.backText}>← Volver al Menú Principal</Text>
         </Pressable>
       </View>
-
-      {/* Modal Email */}
-      <Modal visible={modalEmail} transparent={true} animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>📧 Enviar Informe por Email</Text>
-
-            <TextInput
-              style={styles.emailInput}
-              placeholder="correo@ejemplo.com"
-              placeholderTextColor="#9ca3af"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-            />
-
-            <View style={styles.modalButtons}>
-              <Pressable
-                style={styles.modalBtnCancel}
-                onPress={() => setModalEmail(false)}
-              >
-                <Text style={styles.modalBtnCancelText}>Cancelar</Text>
-              </Pressable>
-
-              <Pressable
-                style={[styles.modalBtnSend, enviando && { opacity: 0.6 }]}
-                onPress={enviarPorEmail}
-                disabled={enviando}
-              >
-                {enviando ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.modalBtnSendText}>📧 Enviar</Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -562,20 +466,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
-  btnEmail: {
-    flex: 1,
-    backgroundColor: "#f59e0b",
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-
-  btnEmailText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "800",
-  },
-
   backButton: {
     paddingVertical: 14,
     backgroundColor: "#3b82f6",
@@ -587,74 +477,6 @@ const styles = StyleSheet.create({
   backText: {
     color: "#fff",
     fontSize: 15,
-    fontWeight: "800",
-  },
-
-  // ========== MODAL ==========
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-
-  modalContent: {
-    width: "100%",
-    maxWidth: 400,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
-  },
-
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#102a43",
-    marginBottom: 16,
-  },
-
-  emailInput: {
-    backgroundColor: "#f3f4f6",
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    marginBottom: 20,
-    color: "#1f2937",
-  },
-
-  modalButtons: {
-    flexDirection: "row",
-    gap: 12,
-  },
-
-  modalBtnCancel: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-
-  modalBtnCancelText: {
-    color: "#6b7280",
-    fontWeight: "700",
-  },
-
-  modalBtnSend: {
-    flex: 1,
-    backgroundColor: "#f59e0b",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-
-  modalBtnSendText: {
-    color: "#fff",
     fontWeight: "800",
   },
 });
