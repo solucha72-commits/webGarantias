@@ -87,12 +87,23 @@ export default function GarantiaDetalle() {
           onPress: async () => {
             try {
               setEditando(true);
-              const idNumber = parseInt(id as string);
               
-              const { error } = await supabase
+              // Convertir id a número
+              const idNumber = typeof id === "string" ? parseInt(id, 10) : id;
+              
+              console.log("Intentando eliminar ID:", idNumber, "Tipo:", typeof idNumber);
+              
+              if (!idNumber || isNaN(idNumber)) {
+                throw new Error("ID inválido: " + id);
+              }
+
+              const { error, data } = await supabase
                 .from("garantias")
                 .delete()
-                .eq("id", idNumber);
+                .eq("id", idNumber)
+                .select();
+
+              console.log("Respuesta Supabase:", { error, data });
 
               if (error) {
                 console.error("Error Supabase:", error);
@@ -100,12 +111,14 @@ export default function GarantiaDetalle() {
               }
 
               alert("✅ Garantía eliminada correctamente");
+              
+              // Esperar un poco antes de navegar
               setTimeout(() => {
                 router.push("/formulario");
-              }, 500);
+              }, 800);
             } catch (error: any) {
               console.error("Error completo:", error);
-              alert("❌ Error al eliminar: " + error.message);
+              alert("❌ Error al eliminar: " + (error.message || JSON.stringify(error)));
             } finally {
               setEditando(false);
             }
