@@ -210,6 +210,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     alignItems: "center",
     paddingHorizontal: 10,
+    minHeight: "100%",
   },
 
   cardContainer: {
