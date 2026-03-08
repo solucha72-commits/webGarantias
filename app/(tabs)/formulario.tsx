@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, FlatList, Pressable, Platform, TextInput } from "react-native";
-import { useEffect, useState } from "react";
+import { View, Text, StyleSheet, FlatList, Pressable, Platform, TextInput, ScrollView, useWindowDimensions } from "react-native";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 
 type Garantia = {
   id: number;
@@ -19,14 +19,30 @@ export default function Formulario() {
   const [garantiasFiltradas, setGarantiasFiltradas] = useState<Garantia[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
-  useEffect(() => {
-    supabase
+  // ========== FUNCIÓN PARA CARGAR GARANTÍAS ==========
+  const cargarGarantias = useCallback(async () => {
+    const { data } = await supabase
       .from("garantias")
       .select("id,tipo,marca,modelo,importe,duracion_garantia,centro_compra,fechacompra")
-      .order("id", { ascending: false })
-      .then(({ data }) => setGarantias(data ?? []));
+      .order("id", { ascending: false });
+    
+    setGarantias(data ?? []);
   }, []);
+
+  // ========== RECARGAR CUANDO LA PANTALLA RECIBE FOCO ==========
+  useFocusEffect(
+    useCallback(() => {
+      cargarGarantias();
+    }, [cargarGarantias])
+  );
+
+  // ========== CARGAR INICIAL ==========
+  useEffect(() => {
+    cargarGarantias();
+  }, [cargarGarantias]);
 
   // ========== FILTRAR POR BÚSQUEDA ==========
   useEffect(() => {
@@ -53,19 +69,21 @@ export default function Formulario() {
 
   return (
     <View style={styles.mainContainer}>
-      <View style={styles.contentWrapper}>
-        <Text style={styles.header}>Mis Garantías Guardadas</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.cardContainer}>
+        <View style={styles.contentWrapper}>
+          <Text style={[styles.header, isMobile && styles.headerMobile]}>Mis Garantías Guardadas</Text>
 
-        {/* ========== CAMPO DE BÚSQUEDA ========== */}
-        <TextInput
-          style={styles.searchInput}
-          placeholder="🔍 Buscar por familia, marca o centro..."
-          placeholderTextColor="#9ca3af"
-          value={busqueda}
-          onChangeText={setBusqueda}
-        />
+          {/* ========== CAMPO DE BÚSQUEDA ========== */}
+          <TextInput
+            style={styles.searchInput}
+            placeholder="🔍 Buscar por familia, marca o centro..."
+            placeholderTextColor="#9ca3af"
+            value={busqueda}
+            onChangeText={setBusqueda}
+          />
 
-        {garantiasFiltradas.length === 0 ? (
+          {garantiasFiltradas.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>{busqueda ? "🔍" : "📋"}</Text>
             <Text style={styles.emptyText}>
@@ -85,12 +103,15 @@ export default function Formulario() {
             ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
             renderItem={({ item }) => (
               <Pressable
-                style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
+                style={({ pressed }) => [
+                  isMobile ? styles.rowMobile : styles.row,
+                  pressed && { opacity: 0.85 }
+                ]}
                 onPress={() => router.push({ pathname: "/garantia", params: { id: item.id } })}
               >
                 {/* HEADER: Tipo y Marca */}
                 <View style={styles.headerSection}>
-                  <Text style={styles.title}>
+                  <Text style={[styles.title, isMobile && styles.titleMobile]}>
                     {item.tipo} · {item.marca}
                   </Text>
                 </View>
@@ -99,19 +120,19 @@ export default function Formulario() {
                 <View style={styles.contentSection}>
                   {/* FILA 1: Modelo */}
                   <View style={styles.infoRow}>
-                    <Text style={styles.label}>Modelo</Text>
-                    <Text style={styles.value}>{item.modelo}</Text>
+                    <Text style={[styles.label, isMobile && styles.labelMobile]}>Modelo</Text>
+                    <Text style={[styles.value, isMobile && styles.valueMobile]}>{item.modelo}</Text>
                   </View>
 
                   {/* FILA 2: Centro y Fecha */}
-                  <View style={styles.twoColumnRow}>
+                  <View style={isMobile ? styles.twoColumnRowMobile : styles.twoColumnRow}>
                     <View style={styles.halfColumn}>
-                      <Text style={styles.label}>Centro</Text>
-                      <Text style={styles.value}>{item.centro_compra}</Text>
+                      <Text style={[styles.label, isMobile && styles.labelMobile]}>Centro</Text>
+                      <Text style={[styles.value, isMobile && styles.valueMobile]}>{item.centro_compra}</Text>
                     </View>
                     <View style={styles.halfColumn}>
-                      <Text style={styles.label}>Fecha Compra</Text>
-                      <Text style={styles.value}>{formatearFecha(item.fechacompra)}</Text>
+                      <Text style={[styles.label, isMobile && styles.labelMobile]}>Fecha Compra</Text>
+                      <Text style={[styles.value, isMobile && styles.valueMobile]}>{formatearFecha(item.fechacompra)}</Text>
                     </View>
                   </View>
                 </View>
@@ -119,7 +140,7 @@ export default function Formulario() {
                 {/* PRECIO A LA DERECHA */}
                 <View style={styles.priceSection}>
                   <View style={styles.priceContainer}>
-                    <Text style={styles.price}>{item.importe}€</Text>
+                    <Text style={[styles.price, isMobile && styles.priceMobile]}>{item.importe}€</Text>
                   </View>
                   <Text style={styles.tapText}>Ver detalles →</Text>
                 </View>
@@ -131,7 +152,9 @@ export default function Formulario() {
         <Pressable onPress={() => router.push("/")} style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.85 }]}>
           <Text style={styles.backText}>← Volver al Menú Principal</Text>
         </Pressable>
-      </View>
+        </View>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -139,31 +162,62 @@ export default function Formulario() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#f0f4f8",
+    backgroundColor: "#f1f5f9",
     alignItems: "center",
+    paddingVertical: 20,
+  },
+
+  scrollContent: {
+    alignItems: "center",
+  },
+
+  cardContainer: {
+    width: "100%",
+    maxWidth: 1000,
+    backgroundColor: "#ffffff",
+    borderRadius: 32,
+    padding: 0,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 15 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 12,
+      },
+      web: {
+        boxShadow: "0px 20px 40px rgba(0,0,0,0.06)",
+      },
+    }),
   },
 
   contentWrapper: {
     flex: 1,
     width: "100%",
-    maxWidth: 1000,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: 45,
+    paddingVertical: 40,
   },
 
   header: {
     fontSize: 32,
     fontWeight: "900",
-    color: "#102a43",
+    color: "#0f172a",
     marginBottom: 24,
     textAlign: "center",
+    letterSpacing: -1,
+  },
+
+  headerMobile: {
+    fontSize: 24,
   },
 
   // ========== CAMPO DE BÚSQUEDA ==========
   searchInput: {
-    backgroundColor: "#fff",
+    backgroundColor: "#f8fafc",
     borderWidth: 2,
-    borderColor: "#3b82f6",
+    borderColor: "#e2e8f0",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -211,22 +265,35 @@ const styles = StyleSheet.create({
   },
 
   row: {
-    backgroundColor: "#fff",
+    backgroundColor: "#f8fafc",
     padding: 20,
     borderRadius: 16,
     borderLeftWidth: 4,
-    borderLeftColor: "#3b82f6",
+    borderLeftColor: "#2563eb",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 16,
     ...Platform.select({
       web: {
-        boxShadow: "0px 4px 12px rgba(0,0,0,0.08)",
+        boxShadow: "0px 4px 12px rgba(0,0,0,0.05)",
         cursor: "pointer",
       },
-      default: { elevation: 3 },
+      default: { elevation: 2 },
     }),
+  },
+
+  rowMobile: {
+    backgroundColor: "#f8fafc",
+    padding: 16,
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: "#2563eb",
+    flexDirection: "column",
+    justifyContent: "flex-start",
+    alignItems: "stretch",
+    gap: 12,
+    elevation: 2,
   },
 
   // ========== SECTIONS ==========
@@ -238,7 +305,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#1f2937",
+    color: "#0f172a",
+  },
+
+  titleMobile: {
+    fontSize: 14,
   },
 
   contentSection: {
@@ -253,20 +324,35 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#9ca3af",
+    color: "#64748b",
     textTransform: "uppercase",
     letterSpacing: 0.5,
+  },
+
+  labelMobile: {
+    fontSize: 10,
   },
 
   value: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#374151",
+    color: "#475569",
+  },
+
+  valueMobile: {
+    fontSize: 13,
   },
 
   twoColumnRow: {
     flexDirection: "row",
     gap: 16,
+    width: "100%",
+  },
+
+  twoColumnRowMobile: {
+    flexDirection: "column",
+    gap: 12,
+    width: "100%",
   },
 
   halfColumn: {
@@ -286,7 +372,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: "#3b82f6",
+    borderColor: "#2563eb",
   },
 
   price: {
@@ -296,27 +382,31 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
+  priceMobile: {
+    fontSize: 14,
+  },
+
   tapText: {
     fontSize: 12,
-    color: "#9ca3af",
+    color: "#94a3b8",
     marginTop: 8,
     fontWeight: "600",
   },
 
   // ========== BOTÓN VOLVER ==========
   backButton: {
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#2563eb",
     paddingVertical: 14,
     paddingHorizontal: 40,
-    borderRadius: 10,
+    borderRadius: 18,
     marginTop: 30,
-    marginBottom: 20,
+    marginBottom: 0,
     alignItems: "center",
     justifyContent: "center",
     elevation: 2,
     ...Platform.select({
       web: {
-        boxShadow: "0px 4px 12px rgba(59, 130, 246, 0.3)",
+        boxShadow: "0px 4px 12px rgba(37, 99, 235, 0.3)",
         cursor: "pointer",
       },
     }),
