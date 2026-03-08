@@ -25,6 +25,7 @@ export default function PantallaAltas() {
   const [modalMarca, setModalMarca] = useState(false);
   const [modalCentro, setModalCentro] = useState(false);
   const [modalEscanear, setModalEscanear] = useState(false);
+  const [modalNuevaGarantia, setModalNuevaGarantia] = useState(false);
   
   // MODAL DE CONFIRMACIÓN PARA ELIMINAR
   const [modalConfirmarEliminar, setModalConfirmarEliminar] = useState(false);
@@ -67,13 +68,25 @@ export default function PantallaAltas() {
   const cargarCatalogos = async () => {
     try {
       const [resC, resF, resM] = await Promise.all([
-        supabase.from("centro").select("*").order("centro"),
-        supabase.from("familia").select("*").order("familia"),
-        supabase.from("marca").select("*").order("marca"),
+        supabase.from("centro").select("*"),
+        supabase.from("familia").select("*"),
+        supabase.from("marca").select("*"),
       ]);
-      setCentros(resC.data || []);
-      setFamilias(resF.data || []);
-      setMarcas(resM.data || []);
+      
+      // Ordenar alfabéticamente sin importar mayúsculas (A-Z)
+      const centrosOrdenados = (resC.data || []).sort((a, b) => 
+        a.centro.toLowerCase().localeCompare(b.centro.toLowerCase())
+      );
+      const familiasOrdenadas = (resF.data || []).sort((a, b) => 
+        a.familia.toLowerCase().localeCompare(b.familia.toLowerCase())
+      );
+      const marcasOrdenadas = (resM.data || []).sort((a, b) => 
+        a.marca.toLowerCase().localeCompare(b.marca.toLowerCase())
+      );
+      
+      setCentros(centrosOrdenados);
+      setFamilias(familiasOrdenadas);
+      setMarcas(marcasOrdenadas);
     } catch (e) {
       console.error("Error cargando catálogos:", e);
     } finally {
@@ -272,13 +285,27 @@ export default function PantallaAltas() {
       
       setSubiendo(true);
       const archivo = result.assets[0];
-      const nombreUnico = `${Date.now()}_${archivo.name}`;
+      
+      // Generar nombre con estructura: año_mes_día_código_nombre
+      const ahora = new Date();
+      const año = ahora.getFullYear();
+      const mes = String(ahora.getMonth() + 1).padStart(2, "0");
+      const día = String(ahora.getDate()).padStart(2, "0");
+      const codigoAleatorio = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+      
+      // Obtener nombre sin extensión y extension
+      const partes = archivo.name.split(".");
+      const extension = partes[partes.length - 1];
+      const nombreSinExtension = partes.slice(0, -1).join(".");
+      
+      const nombreUnico = `${año}_${mes}_${día}_${codigoAleatorio}_${nombreSinExtension}.${extension}`;
 
       let fileBody;
       const res = await fetch(archivo.uri);
       fileBody = await res.blob();
 
-      const { error } = await supabase.storage.from("garantias").upload(nombreUnico, fileBody);
+      // Subir a la carpeta pdf/ dentro del bucket garantias
+      const { error } = await supabase.storage.from("garantias").upload(`pdf/${nombreUnico}`, fileBody);
       if (error) throw error;
       
       setForm({ ...form, nombre_archivo: nombreUnico });
@@ -291,12 +318,64 @@ export default function PantallaAltas() {
     }
   };
 
+  // ========== FUNCIÓN: Nueva garantía ==========
+  const handleNuevaGarantia = () => {
+    setModalNuevaGarantia(false);
+    setForm({
+      tipo: "",
+      marca: "",
+      modelo: "",
+      importe: "",
+      duracion_garantia: "",
+      centro_compra: "",
+      observaciones: "",
+      nombre_archivo: "",
+      correo_electronico: "",
+    });
+    setFecha(new Date());
+  };
+
+  // ========== FUNCIÓN: Ir al menú principal ==========
+  const handleIrAlMenu = () => {
+    setModalNuevaGarantia(false);
+    router.replace("/");
+  };
+
   // ========== ORIGINAL: Guardar garantía ==========
   const handleSave = async () => {
-    if (!form.tipo || !form.marca || !form.centro_compra || !form.importe) {
-      alert("⚠️ Rellena los campos obligatorios (*)");
+    // Validar campos obligatorios: tipo, marca, modelo, importe, centro_compra
+    if (!form.tipo || !form.tipo.trim()) {
+      alert("⚠️ El campo FAMILIA (*) es obligatorio");
       return;
     }
+    if (!form.marca || !form.marca.trim()) {
+      alert("⚠️ El campo MARCA (*) es obligatorio");
+      return;
+    }
+    if (!form.modelo || !form.modelo.trim()) {
+      alert("⚠️ El campo MODELO (*) es obligatorio");
+      return;
+    }
+    if (!form.duracion_garantia || !form.duracion_garantia.trim()) {
+      alert("⚠️ El campo DURACIÓN (*) es obligatorio");
+      return;
+    }
+    if (!form.importe || !form.importe.trim()) {
+      alert("⚠️ El campo PRECIO (*) es obligatorio");
+      return;
+    }
+    if (!form.centro_compra || !form.centro_compra.trim()) {
+      alert("⚠️ El campo CENTRO DE COMPRA (*) es obligatorio");
+      return;
+    }
+
+    // Validar que importe sea un número válido
+    const precioNum = parseFloat(form.importe);
+    if (isNaN(precioNum) || precioNum <= 0) {
+      alert("⚠️ El PRECIO debe ser un número válido mayor a 0");
+      return;
+    }
+
     setLoading(true);
     let guardadoExitoso = false;
     let intentos = 0;
@@ -315,7 +394,7 @@ export default function PantallaAltas() {
         if (!error) {
           guardadoExitoso = true;
           alert(`✨ Guardado con éxito. ID: ${idAleatorio}`);
-          router.replace("/");
+          setModalNuevaGarantia(true);
         } else if (error.code !== "23505") {
           throw error;
         }
@@ -397,13 +476,33 @@ export default function PantallaAltas() {
             </Pressable>
           </View>
 
-          <Text style={styles.xlLabel}>MODELO *</Text>
-          <TextInput
-            style={styles.xlInput}
-            placeholder="Modelo del equipo"
-            value={form.modelo}
-            onChangeText={(t) => setForm({ ...form, modelo: t })}
-          />
+          <Text style={styles.xlLabel}>MODELO * / DURACIÓN *</Text>
+          <View style={styles.rowInputs}>
+            <View style={styles.halfInput}>
+              <TextInput
+                style={[styles.xlInput, { marginBottom: 0 }]}
+                placeholder="Modelo del equipo"
+                value={form.modelo}
+                onChangeText={(t) => setForm({ ...form, modelo: t })}
+              />
+            </View>
+            <View style={styles.halfInput}>
+              <View style={styles.xlInputBox}>
+                <Picker 
+                  selectedValue={form.duracion_garantia} 
+                  onValueChange={(v) => setForm({ ...form, duracion_garantia: v })}
+                  style={{ height: 80, fontSize: 22 }}
+                >
+                  <Picker.Item label="Selecciona años..." value="" />
+                  <Picker.Item label="1 año" value="1" />
+                  <Picker.Item label="2 años" value="2" />
+                  <Picker.Item label="3 años" value="3" />
+                  <Picker.Item label="4 años" value="4" />
+                  <Picker.Item label="5 años" value="5" />
+                </Picker>
+              </View>
+            </View>
+          </View>
 
           <View style={styles.divider} />
 
@@ -511,6 +610,35 @@ export default function PantallaAltas() {
           </Pressable>
         </View>
       </View>
+
+      {/* ========== MODAL NUEVA GARANTÍA ========== */}
+      <Modal visible={modalNuevaGarantia} transparent={true} animationType="fade">
+        <View style={[styles.centeredView, { justifyContent: "center" }]}>
+          <View style={[styles.modalView, { width: "85%", maxWidth: 350 }]}>
+            <Text style={[styles.modalTitle, { textAlign: "center", marginBottom: 15, fontSize: 20 }]}>
+              ✨ ¡Garantía Registrada!
+            </Text>
+            <Text style={[styles.modalTitle, { textAlign: "center", marginBottom: 25, fontSize: 15, fontWeight: "400", color: "#6b7280" }]}>
+              ¿Deseas registrar otra garantía?
+            </Text>
+
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <Pressable 
+                style={[styles.modalBtn, { backgroundColor: "#ef4444", flex: 1 }]}
+                onPress={handleIrAlMenu}
+              >
+                <Text style={styles.modalBtnText}>❌ No, Ir al Menú</Text>
+              </Pressable>
+              <Pressable 
+                style={[styles.modalBtn, { backgroundColor: "#10b981", flex: 1 }]}
+                onPress={handleNuevaGarantia}
+              >
+                <Text style={styles.modalBtnText}>✅ Sí, Nueva</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* ========== MODAL FAMILIA (PEQUEÑO) ========== */}
       <Modal visible={modalFamilia} transparent={true} animationType="fade">

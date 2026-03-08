@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, Pressable, Platform, ActivityIndicator, Modal, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 export default function Escaner() {
   const router = useRouter();
@@ -49,7 +49,6 @@ export default function Escaner() {
   // ========== IR A ALTAS CON DOCUMENTO ==========
   const handleIrAAltas = () => {
     if (documentoCapturado) {
-      // Pasar el nombre del archivo a través de los parámetros de ruta
       router.push({
         pathname: "/altas",
         params: { documento: documentoCapturado.nombreUnico },
@@ -66,8 +65,8 @@ export default function Escaner() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* ========== ENCABEZADO ==========  */}
+    <View style={styles.mainContainer}>
+      {/* ========== HEADER ==========  */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()}>
           <Text style={styles.backButton}>← Volver</Text>
@@ -76,102 +75,103 @@ export default function Escaner() {
         <View style={{ width: 50 }} />
       </View>
 
-      {/* ========== CONTENIDO PRINCIPAL ==========  */}
-      <View style={styles.content}>
-        {!documentoCapturado ? (
-          <>
-            {/* Estado: Sin documento */}
-            <View style={styles.emptyState}>
-              <Text style={styles.iconLarge}>
-                {Platform.OS === "web" ? "📁" : "📸"}
-              </Text>
-              <Text style={styles.emptyTitle}>
-                {Platform.OS === "web"
-                  ? "Selecciona un documento"
-                  : "Captura una foto del ticket"}
-              </Text>
-              <Text style={styles.emptySubtext}>
-                {Platform.OS === "web"
-                  ? "Elige un archivo de tu PC (PDF, imagen, etc.)"
-                  : "Abre tu cámara para fotografiar el ticket o recibo"}
-              </Text>
-            </View>
-
-            {/* Botón escanear */}
-            <Pressable
-              style={[styles.scanButton, subiendo && styles.buttonDisabled]}
-              onPress={handleEscanearDocumento}
-              disabled={subiendo}
-            >
-              {subiendo ? (
-                <ActivityIndicator color="#fff" size="large" />
-              ) : (
-                <>
-                  <Text style={styles.scanButtonIcon}>
-                    {Platform.OS === "web" ? "📁" : "📸"}
-                  </Text>
-                  <Text style={styles.scanButtonText}>
-                    {Platform.OS === "web"
-                      ? "Seleccionar Archivo"
-                      : "Abrir Cámara"}
-                  </Text>
-                </>
-              )}
-            </Pressable>
-          </>
-        ) : (
-          <>
-            {/* Estado: Documento capturado */}
-            <View style={styles.successState}>
-              <Text style={styles.successIcon}>✅</Text>
-              <Text style={styles.successTitle}>¡Documento Capturado!</Text>
-              <View style={styles.documentoInfo}>
-                <Text style={styles.documentoLabel}>Archivo:</Text>
-                <Text style={styles.documentoNombre}>{documentoCapturado.nombre}</Text>
+      {/* ========== TARJETA CONTENEDORA ==========  */}
+      <View style={styles.cardContainer}>
+        <View style={styles.contentWrapper}>
+          {!documentoCapturado ? (
+            <>
+              {/* Estado: Sin documento */}
+              <View style={styles.emptyState}>
+                <Text style={styles.iconLarge}>
+                  {Platform.OS === "web" ? "📁" : "📸"}
+                </Text>
+                <Text style={styles.emptyTitle}>
+                  {Platform.OS === "web"
+                    ? "Selecciona un documento"
+                    : "Captura una foto del ticket"}
+                </Text>
+                <Text style={styles.emptySubtext}>
+                  {Platform.OS === "web"
+                    ? "Elige un archivo de tu PC (PDF, imagen, etc.)"
+                    : "Abre tu cámara para fotografiar el ticket o recibo"}
+                </Text>
               </View>
-            </View>
 
-            {/* Botones de acción */}
-            <View style={styles.buttonGroup}>
+              {/* Botón escanear */}
               <Pressable
-                style={styles.continueButton}
-                onPress={handleIrAAltas}
+                style={[styles.scanButton, subiendo && styles.buttonDisabled]}
+                onPress={handleEscanearDocumento}
+                disabled={subiendo}
               >
-                <Text style={styles.continueButtonText}>Continuar con el Registro</Text>
+                {subiendo ? (
+                  <ActivityIndicator color="#fff" size="large" />
+                ) : (
+                  <>
+                    <Text style={styles.scanButtonIcon}>
+                      {Platform.OS === "web" ? "📁" : "📸"}
+                    </Text>
+                    <Text style={styles.scanButtonText}>
+                      {Platform.OS === "web"
+                        ? "Seleccionar Archivo"
+                        : "Abrir Cámara"}
+                    </Text>
+                  </>
+                )}
               </Pressable>
+            </>
+          ) : (
+            <>
+              {/* Estado: Documento capturado */}
+              <View style={styles.successState}>
+                <Text style={styles.successIcon}>✅</Text>
+                <Text style={styles.successTitle}>¡Documento Capturado!</Text>
+                <View style={styles.documentoInfo}>
+                  <Text style={styles.documentoLabel}>Archivo:</Text>
+                  <Text style={styles.documentoNombre}>{documentoCapturado.nombre}</Text>
+                </View>
+              </View>
 
-              <Pressable
-                style={styles.recaptureButton}
-                onPress={handleCancelar}
-              >
-                <Text style={styles.recaptureButtonText}>Capturar Otro</Text>
-              </Pressable>
-            </View>
-          </>
-        )}
-      </View>
+              {/* Botones de acción */}
+              <View style={styles.buttonGroup}>
+                <Pressable
+                  style={styles.continueButton}
+                  onPress={handleIrAAltas}
+                >
+                  <Text style={styles.continueButtonText}>Continuar con el Registro</Text>
+                </Pressable>
 
-      {/* ========== INFO FOOTER ==========  */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          {documentoCapturado
-            ? "Documento listo para el registro"
-            : "Los archivos se guardan de forma segura"}
-        </Text>
+                <Pressable
+                  style={styles.recaptureButton}
+                  onPress={handleCancelar}
+                >
+                  <Text style={styles.recaptureButtonText}>Capturar Otro</Text>
+                </Pressable>
+              </View>
+            </>
+          )}
 
-        {/* ========== BOTÓN VOLVER AL MENÚ PRINCIPAL ========== */}
-        <Pressable onPress={() => router.push("/")} style={({ pressed }) => [styles.homeButton, pressed && { opacity: 0.85 }]}>
-          <Text style={styles.homeButtonText}>← Volver al Menú Principal</Text>
-        </Pressable>
+          {/* ========== BOTÓN VOLVER AL MENÚ PRINCIPAL DENTRO DE LA TARJETA ========== */}
+          <View style={styles.footerContent}>
+            <Text style={styles.footerText}>
+              {documentoCapturado
+                ? "Documento listo para el registro"
+                : "Los archivos se guardan de forma segura"}
+            </Text>
+
+            <Pressable onPress={() => router.push("/")} style={({ pressed }) => [styles.homeButton, pressed && { opacity: 0.85 }]}>
+              <Text style={styles.homeButtonText}>← Volver al Menú Principal</Text>
+            </Pressable>
+          </View>
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
     flex: 1,
-    backgroundColor: "#f0f4f8",
+    backgroundColor: "#f1f5f9",
   },
 
   // ========== HEADER ==========
@@ -189,21 +189,47 @@ const styles = StyleSheet.create({
   backButton: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#3b82f6",
+    color: "#2563eb",
   },
 
   headerTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#102a43",
+    color: "#0f172a",
+  },
+
+  // ========== TARJETA CONTENEDORA ==========
+  cardContainer: {
+    flex: 1,
+    marginHorizontal: 20,
+    marginVertical: 20,
+    maxWidth: 1000,
+    alignSelf: "center",
+    width: "100%",
+    backgroundColor: "#ffffff",
+    borderRadius: 32,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 15 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 12,
+      },
+      web: {
+        boxShadow: "0px 20px 40px rgba(0,0,0,0.06)",
+      },
+    }),
   },
 
   // ========== CONTENIDO ==========
-  content: {
+  contentWrapper: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 45,
     paddingVertical: 40,
-    justifyContent: "center",
+    justifyContent: "space-between",
     alignItems: "center",
   },
 
@@ -221,14 +247,14 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#102a43",
+    color: "#0f172a",
     marginBottom: 12,
     textAlign: "center",
   },
 
   emptySubtext: {
     fontSize: 16,
-    color: "#6b7280",
+    color: "#64748b",
     textAlign: "center",
     maxWidth: 300,
     lineHeight: 24,
@@ -244,6 +270,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     elevation: 5,
+    ...Platform.select({
+      web: {
+        boxShadow: "0px 4px 12px rgba(37, 99, 235, 0.3)",
+        cursor: "pointer",
+      },
+    }),
   },
 
   buttonDisabled: {
@@ -293,7 +325,7 @@ const styles = StyleSheet.create({
   documentoLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#6b7280",
+    color: "#64748b",
     marginBottom: 5,
   },
 
@@ -314,9 +346,15 @@ const styles = StyleSheet.create({
   continueButton: {
     backgroundColor: "#10b981",
     paddingVertical: 18,
-    borderRadius: 12,
+    borderRadius: 18,
     alignItems: "center",
     elevation: 3,
+    ...Platform.select({
+      web: {
+        boxShadow: "0px 4px 12px rgba(16, 185, 129, 0.3)",
+        cursor: "pointer",
+      },
+    }),
   },
 
   continueButtonText: {
@@ -326,25 +364,29 @@ const styles = StyleSheet.create({
   },
 
   recaptureButton: {
-    backgroundColor: "#f0f4f8",
+    backgroundColor: "#f8fafc",
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 2,
-    borderColor: "#cbd5e1",
+    borderColor: "#e2e8f0",
     alignItems: "center",
+    ...Platform.select({
+      web: {
+        cursor: "pointer",
+      },
+    }),
   },
 
   recaptureButtonText: {
-    color: "#3b82f6",
+    color: "#2563eb",
     fontSize: 16,
     fontWeight: "700",
   },
 
-  // ========== FOOTER ==========
-  footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: "#fff",
+  // ========== FOOTER CONTENT (dentro de la tarjeta) ==========
+  footerContent: {
+    width: "100%",
+    paddingTop: 30,
     borderTopWidth: 1,
     borderTopColor: "#e2e8f0",
     alignItems: "center",
@@ -359,16 +401,16 @@ const styles = StyleSheet.create({
 
   // ========== BOTÓN VOLVER AL MENÚ PRINCIPAL ==========
   homeButton: {
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#2563eb",
     paddingVertical: 12,
     paddingHorizontal: 32,
-    borderRadius: 10,
+    borderRadius: 18,
     alignItems: "center",
     marginTop: 8,
     elevation: 2,
     ...Platform.select({
       web: {
-        boxShadow: "0px 4px 12px rgba(59, 130, 246, 0.3)",
+        boxShadow: "0px 4px 12px rgba(37, 99, 235, 0.3)",
         cursor: "pointer",
       },
     }),

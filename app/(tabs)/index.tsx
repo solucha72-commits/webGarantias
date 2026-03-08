@@ -11,7 +11,7 @@ export default function Home() {
         <View style={styles.card}>
           <View style={styles.headerSection}>
             <Text style={styles.title}>Garantías</Text>
-            <Text style={styles.subtitle}>Gestión inteligente de tus productos</Text>
+            <Text style={styles.subtitle}>Gestor Documental Garantías</Text>
           </View>
 
           <View style={styles.buttonGrid}>

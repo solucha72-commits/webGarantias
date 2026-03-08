@@ -1,15 +1,20 @@
 import { Tabs } from "expo-router";
-import React from "react";
+import { Platform, View } from "react-native";
 
 export default function TabLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: false }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Inicio",
-        }}
-      />
+    <Tabs
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        // Ocultar tab bar en TODAS las pantallas
+        tabBarStyle: {
+          display: "none",
+        },
+        // Alternativa si lo anterior no funciona
+        tabBarVisible: false,
+      })}
+    >
+      {/* Las rutas se generan automáticamente con Expo Router */}
     </Tabs>
   );
 }
