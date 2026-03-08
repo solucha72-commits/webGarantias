@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, FlatList, Pressable, Platform, TextInput } from "react-native";
+import { View, Text, StyleSheet, FlatList, Pressable, Platform, TextInput, ScrollView } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -67,7 +67,8 @@ export default function Formulario() {
 
   return (
     <View style={styles.mainContainer}>
-      <View style={styles.cardContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.cardContainer}>
         <View style={styles.contentWrapper}>
           <Text style={styles.header}>Mis Garantías Guardadas</Text>
 
@@ -147,7 +148,8 @@ export default function Formulario() {
           <Text style={styles.backText}>← Volver al Menú Principal</Text>
         </Pressable>
         </View>
-      </View>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -158,6 +160,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#f1f5f9",
     alignItems: "center",
     paddingVertical: 20,
+  },
+
+  scrollContent: {
+    alignItems: "center",
   },
 
   cardContainer: {
