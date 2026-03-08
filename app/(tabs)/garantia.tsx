@@ -19,7 +19,7 @@ export default function GarantiaDetalle() {
   const [enviandoEmail, setEnviandoEmail] = useState(false);
   const [editando, setEditando] = useState(false);
   const [formEditar, setFormEditar] = useState<any>(null);
-  
+
   // ========== CATÁLOGOS ==========
   const [familias, setFamilias] = useState<any[]>([]);
   const [marcas, setMarcas] = useState<any[]>([]);
@@ -81,7 +81,7 @@ export default function GarantiaDetalle() {
         const duracion = parseInt(data.duracion_garantia) || 0;
         const fechaVencimientoCalc = new Date(fechaCompra);
         fechaVencimientoCalc.setFullYear(fechaVencimientoCalc.getFullYear() + duracion);
-        
+
         const fechaFormato = fechaVencimientoCalc.toLocaleDateString("es-ES", {
           day: "2-digit",
           month: "2-digit",
@@ -107,7 +107,7 @@ export default function GarantiaDetalle() {
 
         try {
           const response = await fetch(url, { method: "HEAD" });
-          
+
           if (response.ok) {
             setFileUrl(url);
             return;
@@ -144,7 +144,7 @@ export default function GarantiaDetalle() {
         setFormEditar({ ...formEditar, tipo: data[0].familia });
       }
 
-      alert("✅ Familia agregada exitosamente");
+      alert("✅ Familia agregada correctamente");
       setNewFamilia("");
       setModalAgregarFamilia(false);
     } catch (error: any) {
@@ -175,7 +175,7 @@ export default function GarantiaDetalle() {
         setFormEditar({ ...formEditar, marca: data[0].marca });
       }
 
-      alert("✅ Marca agregada exitosamente");
+      alert("✅ Marca agregada correctamente");
       setNewMarca("");
       setModalAgregarMarca(false);
     } catch (error: any) {
@@ -206,7 +206,7 @@ export default function GarantiaDetalle() {
         setFormEditar({ ...formEditar, centro_compra: data[0].centro });
       }
 
-      alert("✅ Centro agregado exitosamente");
+      alert("✅ Centro agregado correctamente");
       setNewCentro("");
       setModalAgregarCentro(false);
     } catch (error: any) {
@@ -219,10 +219,7 @@ export default function GarantiaDetalle() {
   const handleEliminarItem = async () => {
     if (!itemAEliminar) return;
     try {
-      const { error } = await supabase
-        .from(itemAEliminar.tipo)
-        .delete()
-        .eq("id", itemAEliminar.id);
+      const { error } = await supabase.from(itemAEliminar.tipo).delete().eq("id", itemAEliminar.id);
 
       if (error) throw error;
 
@@ -234,7 +231,7 @@ export default function GarantiaDetalle() {
         setCentros(centros.filter((c) => c.id !== itemAEliminar.id));
       }
 
-      alert("✅ Elemento eliminado exitosamente");
+      alert("✅ Elemento eliminado correctamente");
       setModalEliminarItem(false);
       setItemAEliminar(null);
     } catch (error: any) {
@@ -263,11 +260,8 @@ export default function GarantiaDetalle() {
     try {
       setEditando(true);
       const idNumber = parseInt(id as string);
-      
-      const { error } = await supabase
-        .from("garantias")
-        .delete()
-        .eq("id", idNumber);
+
+      const { error } = await supabase.from("garantias").delete().eq("id", idNumber);
 
       if (error) throw error;
 
@@ -418,9 +412,7 @@ export default function GarantiaDetalle() {
             </View>
             <View style={styles.column}>
               <Text style={styles.label}>Fecha Vencimiento</Text>
-              <Text style={[styles.topValue, { color: fechaVencimiento ? "#dc2626" : "#6b7280" }]}>
-                {fechaVencimiento || "-"}
-              </Text>
+              <Text style={[styles.topValue, { color: fechaVencimiento ? "#dc2626" : "#6b7280" }]}>{fechaVencimiento || "-"}</Text>
             </View>
             <View style={styles.column} />
           </View>
@@ -458,16 +450,9 @@ export default function GarantiaDetalle() {
               <View style={styles.viewer}>
                 {fileUrl ? (
                   isPDF && Platform.OS === "web" ? (
-                    <iframe 
-                      src={fileUrl} 
-                      style={{ width: "100%", height: "100%", border: "none" } as any}
-                    />
+                    <iframe src={fileUrl} style={{ width: "100%", height: "100%", border: "none" } as any} />
                   ) : (
-                    <Image 
-                      source={{ uri: fileUrl }} 
-                      style={{ width: "100%", height: "100%" }} 
-                      resizeMode="contain" 
-                    />
+                    <Image source={{ uri: fileUrl }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
                   )
                 ) : (
                   <View style={styles.loadingState}>
@@ -489,21 +474,19 @@ export default function GarantiaDetalle() {
             <View style={styles.modalAdvertenciaContent}>
               <Text style={styles.modalAdvertenciaIcon}>⚠️</Text>
               <Text style={styles.modalAdvertenciaTitle}>Función limitada a Gmail</Text>
-              <Text style={styles.modalAdvertenciaText}>
-                Esta función solo funciona con @gmail.com
-              </Text>
+              <Text style={styles.modalAdvertenciaText}>Esta función solo funciona con @gmail.com</Text>
 
               <View style={styles.modalAdvertenciaButtons}>
-                <Pressable
-                  style={styles.modalAdvertenciaBtnVolver}
-                  onPress={() => setModalAdvertencia(false)}
-                >
+                <Pressable style={styles.modalAdvertenciaBtnVolver} onPress={() => setModalAdvertencia(false)}>
                   <Text style={styles.modalAdvertenciaBtnVolverText}>Cancelar</Text>
                 </Pressable>
 
                 <Pressable
                   style={styles.modalAdvertenciaBtnContinuar}
-                  onPress={() => { setModalAdvertencia(false); setModalEmail(true); }}
+                  onPress={() => {
+                    setModalAdvertencia(false);
+                    setModalEmail(true);
+                  }}
                 >
                   <Text style={styles.modalAdvertenciaBtnContinuarText}>Continuar</Text>
                 </Pressable>
@@ -529,24 +512,19 @@ export default function GarantiaDetalle() {
               />
 
               <View style={styles.modalEmailButtons}>
-                <Pressable 
-                  onPress={() => { setModalEmail(false); setEmailDestino(""); }} 
+                <Pressable
+                  onPress={() => {
+                    setModalEmail(false);
+                    setEmailDestino("");
+                  }}
                   style={styles.modalEmailBtnCancel}
                   disabled={enviandoEmail}
                 >
                   <Text style={styles.modalEmailBtnCancelText}>Cancelar</Text>
                 </Pressable>
 
-                <Pressable 
-                  onPress={handleEnviarEmail} 
-                  style={styles.modalEmailBtnSend}
-                  disabled={enviandoEmail}
-                >
-                  {enviandoEmail ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.modalEmailBtnSendText}>Enviar</Text>
-                  )}
+                <Pressable onPress={handleEnviarEmail} style={styles.modalEmailBtnSend} disabled={enviandoEmail}>
+                  {enviandoEmail ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalEmailBtnSendText}>Enviar</Text>}
                 </Pressable>
               </View>
             </View>
@@ -559,29 +537,15 @@ export default function GarantiaDetalle() {
             <View style={styles.modalAdvertenciaContent}>
               <Text style={styles.modalAdvertenciaIcon}>⚠️</Text>
               <Text style={styles.modalAdvertenciaTitle}>¿Estás seguro?</Text>
-              <Text style={styles.modalAdvertenciaText}>
-                Esta acción eliminará la garantía permanentemente
-              </Text>
+              <Text style={styles.modalAdvertenciaText}>Esta acción eliminará la garantía permanentemente</Text>
 
               <View style={styles.modalAdvertenciaButtons}>
-                <Pressable 
-                  style={styles.modalAdvertenciaBtnVolver}
-                  onPress={() => setModalEliminar(false)}
-                  disabled={editando}
-                >
+                <Pressable style={styles.modalAdvertenciaBtnVolver} onPress={() => setModalEliminar(false)} disabled={editando}>
                   <Text style={styles.modalAdvertenciaBtnVolverText}>Cancelar</Text>
                 </Pressable>
 
-                <Pressable 
-                  style={styles.modalAdvertenciaBtnContinuar}
-                  onPress={confirmarEliminacion}
-                  disabled={editando}
-                >
-                  {editando ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.modalAdvertenciaBtnContinuarText}>Eliminar</Text>
-                  )}
+                <Pressable style={styles.modalAdvertenciaBtnContinuar} onPress={confirmarEliminacion} disabled={editando}>
+                  {editando ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalAdvertenciaBtnContinuarText}>Eliminar</Text>}
                 </Pressable>
               </View>
             </View>
@@ -618,10 +582,7 @@ export default function GarantiaDetalle() {
                             ))}
                           </Picker>
                         </View>
-                        <Pressable 
-                          style={styles.addButton}
-                          onPress={() => setModalAgregarFamilia(true)}
-                        >
+                        <Pressable style={styles.addButton} onPress={() => setModalAgregarFamilia(true)}>
                           <Text style={styles.addButtonText}>+</Text>
                         </Pressable>
                       </View>
@@ -643,10 +604,7 @@ export default function GarantiaDetalle() {
                             ))}
                           </Picker>
                         </View>
-                        <Pressable 
-                          style={styles.addButton}
-                          onPress={() => setModalAgregarMarca(true)}
-                        >
+                        <Pressable style={styles.addButton} onPress={() => setModalAgregarMarca(true)}>
                           <Text style={styles.addButtonText}>+</Text>
                         </Pressable>
                       </View>
@@ -703,10 +661,7 @@ export default function GarantiaDetalle() {
                             ))}
                           </Picker>
                         </View>
-                        <Pressable 
-                          style={styles.addButton}
-                          onPress={() => setModalAgregarCentro(true)}
-                        >
+                        <Pressable style={styles.addButton} onPress={() => setModalAgregarCentro(true)}>
                           <Text style={styles.addButtonText}>+</Text>
                         </Pressable>
                       </View>
@@ -728,19 +683,11 @@ export default function GarantiaDetalle() {
               </ScrollView>
 
               <View style={styles.modalEditButtons}>
-                <Pressable 
-                  style={styles.btnCancelar} 
-                  onPress={() => setModalEditar(false)}
-                  disabled={editando}
-                >
+                <Pressable style={styles.btnCancelar} onPress={() => setModalEditar(false)} disabled={editando}>
                   <Text style={styles.btnCancelarText}>Cancelar</Text>
                 </Pressable>
 
-                <Pressable 
-                  style={styles.btnGuardar} 
-                  onPress={handleGuardarCambios}
-                  disabled={editando}
-                >
+                <Pressable style={styles.btnGuardar} onPress={handleGuardarCambios} disabled={editando}>
                   <Text style={styles.btnGuardarText}>{editando ? "Guardando..." : "✅ Guardar"}</Text>
                 </Pressable>
               </View>
@@ -769,24 +716,23 @@ export default function GarantiaDetalle() {
               />
 
               <View style={styles.modalButtons}>
-                <Pressable 
+                <Pressable
                   style={styles.modalBtnCancel}
-                  onPress={() => { setModalAgregarFamilia(false); setNewFamilia(""); }}
+                  onPress={() => {
+                    setModalAgregarFamilia(false);
+                    setNewFamilia("");
+                  }}
                   disabled={loadingFamilia}
                 >
                   <Text style={styles.modalBtnCancelText}>Cancelar</Text>
                 </Pressable>
 
-                <Pressable 
+                <Pressable
                   style={[styles.modalBtn, loadingFamilia && styles.modalBtnDisabled]}
                   onPress={handleAgregarFamilia}
                   disabled={loadingFamilia}
                 >
-                  {loadingFamilia ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.modalBtnText}>Agregar</Text>
-                  )}
+                  {loadingFamilia ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>Agregar</Text>}
                 </Pressable>
               </View>
             </View>
@@ -813,24 +759,19 @@ export default function GarantiaDetalle() {
               />
 
               <View style={styles.modalButtons}>
-                <Pressable 
+                <Pressable
                   style={styles.modalBtnCancel}
-                  onPress={() => { setModalAgregarMarca(false); setNewMarca(""); }}
+                  onPress={() => {
+                    setModalAgregarMarca(false);
+                    setNewMarca("");
+                  }}
                   disabled={loadingMarca}
                 >
                   <Text style={styles.modalBtnCancelText}>Cancelar</Text>
                 </Pressable>
 
-                <Pressable 
-                  style={[styles.modalBtn, loadingMarca && styles.modalBtnDisabled]}
-                  onPress={handleAgregarMarca}
-                  disabled={loadingMarca}
-                >
-                  {loadingMarca ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.modalBtnText}>Agregar</Text>
-                  )}
+                <Pressable style={[styles.modalBtn, loadingMarca && styles.modalBtnDisabled]} onPress={handleAgregarMarca} disabled={loadingMarca}>
+                  {loadingMarca ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>Agregar</Text>}
                 </Pressable>
               </View>
             </View>
@@ -857,24 +798,19 @@ export default function GarantiaDetalle() {
               />
 
               <View style={styles.modalButtons}>
-                <Pressable 
+                <Pressable
                   style={styles.modalBtnCancel}
-                  onPress={() => { setModalAgregarCentro(false); setNewCentro(""); }}
+                  onPress={() => {
+                    setModalAgregarCentro(false);
+                    setNewCentro("");
+                  }}
                   disabled={loadingCentro}
                 >
                   <Text style={styles.modalBtnCancelText}>Cancelar</Text>
                 </Pressable>
 
-                <Pressable 
-                  style={[styles.modalBtn, loadingCentro && styles.modalBtnDisabled]}
-                  onPress={handleAgregarCentro}
-                  disabled={loadingCentro}
-                >
-                  {loadingCentro ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.modalBtnText}>Agregar</Text>
-                  )}
+                <Pressable style={[styles.modalBtn, loadingCentro && styles.modalBtnDisabled]} onPress={handleAgregarCentro} disabled={loadingCentro}>
+                  {loadingCentro ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>Agregar</Text>}
                 </Pressable>
               </View>
             </View>
@@ -887,22 +823,20 @@ export default function GarantiaDetalle() {
             <View style={styles.modalAdvertenciaContent}>
               <Text style={styles.modalAdvertenciaIcon}>⚠️</Text>
               <Text style={styles.modalAdvertenciaTitle}>¿Eliminar?</Text>
-              <Text style={styles.modalAdvertenciaText}>
-                ¿Estás seguro de que deseas eliminar este elemento?
-              </Text>
+              <Text style={styles.modalAdvertenciaText}>¿Estás seguro de que deseas eliminar este elemento?</Text>
 
               <View style={styles.modalAdvertenciaButtons}>
-                <Pressable 
+                <Pressable
                   style={styles.modalAdvertenciaBtnVolver}
-                  onPress={() => { setModalEliminarItem(false); setItemAEliminar(null); }}
+                  onPress={() => {
+                    setModalEliminarItem(false);
+                    setItemAEliminar(null);
+                  }}
                 >
                   <Text style={styles.modalAdvertenciaBtnVolverText}>Cancelar</Text>
                 </Pressable>
 
-                <Pressable 
-                  style={styles.modalAdvertenciaBtnContinuar}
-                  onPress={handleEliminarItem}
-                >
+                <Pressable style={styles.modalAdvertenciaBtnContinuar} onPress={handleEliminarItem}>
                   <Text style={styles.modalAdvertenciaBtnContinuarText}>Eliminar</Text>
                 </Pressable>
               </View>
@@ -930,13 +864,45 @@ const styles = StyleSheet.create({
   viewBtn: { backgroundColor: "#dbeafe", padding: 8, borderRadius: 8, marginTop: 8, alignSelf: "flex-start", borderWidth: 2, borderColor: "#3b82f6" },
   viewBtnText: { color: "#1e40af", fontSize: 13, fontWeight: "700" },
   buttonsContainer: { flexDirection: "row", gap: 12, marginTop: 20, marginBottom: 20 },
-  editButton: { flex: 1, backgroundColor: "#f59e0b", paddingVertical: 14, paddingHorizontal: 20, borderRadius: 10, alignItems: "center", elevation: 2 },
+  editButton: {
+    flex: 1,
+    backgroundColor: "#f59e0b",
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    elevation: 2,
+  },
   editButtonText: { color: "#fff", fontSize: 15, fontWeight: "800" },
-  emailButton: { flex: 1, backgroundColor: "#10b981", paddingVertical: 14, paddingHorizontal: 20, borderRadius: 10, alignItems: "center", elevation: 2 },
+  emailButton: {
+    flex: 1,
+    backgroundColor: "#10b981",
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    elevation: 2,
+  },
   emailButtonText: { color: "#fff", fontSize: 15, fontWeight: "800" },
-  deleteButton: { flex: 1, backgroundColor: "#ef4444", paddingVertical: 14, paddingHorizontal: 20, borderRadius: 10, alignItems: "center", elevation: 2 },
+  deleteButton: {
+    flex: 1,
+    backgroundColor: "#ef4444",
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    elevation: 2,
+  },
   deleteButtonText: { color: "#fff", fontSize: 15, fontWeight: "800" },
-  backButton: { backgroundColor: "#3b82f6", paddingVertical: 16, paddingHorizontal: 40, borderRadius: 12, alignItems: "center", marginTop: 20, elevation: 3 },
+  backButton: {
+    backgroundColor: "#3b82f6",
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 20,
+    elevation: 3,
+  },
   backButtonText: { color: "#fff", fontSize: 16, fontWeight: "800" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", alignItems: "center" },
   modalContent: { width: "90%", height: "85%", backgroundColor: "#fff", borderRadius: 16, padding: 20 },
@@ -962,7 +928,16 @@ const styles = StyleSheet.create({
   modalEmailContent: { width: "90%", maxWidth: 400, backgroundColor: "#fff", borderRadius: 16, padding: 24 },
   modalEmailTitle: { fontSize: 18, fontWeight: "800", color: "#102a43", marginBottom: 16 },
   modalEmailLabel: { fontSize: 14, fontWeight: "700", color: "#6b7280", marginBottom: 12 },
-  modalEmailInput: { backgroundColor: "#f3f4f6", borderWidth: 2, borderColor: "#cbd5e1", borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, marginBottom: 20 },
+  modalEmailInput: {
+    backgroundColor: "#f3f4f6",
+    borderWidth: 2,
+    borderColor: "#cbd5e1",
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    marginBottom: 20,
+  },
   modalEmailButtons: { flexDirection: "row", gap: 12 },
   modalEmailBtnCancel: { flex: 1, borderWidth: 2, borderColor: "#cbd5e1", paddingVertical: 12, borderRadius: 10, alignItems: "center" },
   modalEmailBtnCancelText: { color: "#6b7280", fontWeight: "700" },
@@ -970,7 +945,15 @@ const styles = StyleSheet.create({
   modalEmailBtnSendText: { color: "#fff", fontWeight: "800" },
   modalEditOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", paddingHorizontal: 20 },
   modalEditContent: { width: "100%", maxWidth: 500, backgroundColor: "#fff", borderRadius: 16, padding: 24, maxHeight: "85%" },
-  modalEditHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: "#e5e7eb" },
+  modalEditHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+  },
   modalEditTitle: { fontSize: 18, fontWeight: "800", color: "#102a43" },
   editForm: { paddingBottom: 16, maxHeight: "70%" },
   formGroup: { marginBottom: 18 },
@@ -978,10 +961,34 @@ const styles = StyleSheet.create({
   formLabel: { fontSize: 12, fontWeight: "700", color: "#6b7280", textTransform: "uppercase", marginBottom: 0 },
   addButton: { backgroundColor: "#10b981", width: 32, height: 32, borderRadius: 16, justifyContent: "center", alignItems: "center" },
   addButtonText: { fontSize: 20, fontWeight: "bold", color: "#fff" },
-  pickerBox: { backgroundColor: "#f0f4f8", borderWidth: 2, borderColor: "#cbd5e1", borderRadius: 10, height: 60, justifyContent: "center", marginBottom: 8 },
+  pickerBox: {
+    backgroundColor: "#f0f4f8",
+    borderWidth: 2,
+    borderColor: "#cbd5e1",
+    borderRadius: 10,
+    height: 60,
+    justifyContent: "center",
+    marginBottom: 8,
+  },
   pickerWithButtonRow: { flexDirection: "row", gap: 10, alignItems: "center", marginBottom: 8 },
-  pickerBoxSmall: { flex: 1, backgroundColor: "#f0f4f8", borderWidth: 2, borderColor: "#cbd5e1", borderRadius: 10, height: 60, justifyContent: "center" },
-  deleteItemButton: { backgroundColor: "#fee2e2", paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: "#fca5a5", alignItems: "center" },
+  pickerBoxSmall: {
+    flex: 1,
+    backgroundColor: "#f0f4f8",
+    borderWidth: 2,
+    borderColor: "#cbd5e1",
+    borderRadius: 10,
+    height: 60,
+    justifyContent: "center",
+  },
+  deleteItemButton: {
+    backgroundColor: "#fee2e2",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#fca5a5",
+    alignItems: "center",
+  },
   deleteItemButtonText: { color: "#dc2626", fontSize: 12, fontWeight: "700" },
   textInput: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, padding: 12, fontSize: 15, color: "#1f2937" },
   modalEditButtons: { flexDirection: "row", gap: 12, paddingTop: 16, borderTopWidth: 1, borderTopColor: "#e5e7eb" },
@@ -991,7 +998,16 @@ const styles = StyleSheet.create({
   btnGuardarText: { color: "#fff", fontWeight: "800" },
   centeredView: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0, 0, 0, 0.5)" },
   modalView: { width: "90%", maxWidth: 400, backgroundColor: "#fff", borderRadius: 20, padding: 25, elevation: 5 },
-  modalInput: { backgroundColor: "#f0f4f8", borderWidth: 2, borderColor: "#cbd5e1", borderRadius: 12, padding: 15, fontSize: 16, marginBottom: 15, color: "#333" },
+  modalInput: {
+    backgroundColor: "#f0f4f8",
+    borderWidth: 2,
+    borderColor: "#cbd5e1",
+    borderRadius: 12,
+    padding: 15,
+    fontSize: 16,
+    marginBottom: 15,
+    color: "#333",
+  },
   modalButtons: { flexDirection: "row", gap: 12 },
   modalBtn: { flex: 1, backgroundColor: "#10b981", padding: 15, borderRadius: 12, alignItems: "center", elevation: 3 },
   modalBtnDisabled: { opacity: 0.6 },

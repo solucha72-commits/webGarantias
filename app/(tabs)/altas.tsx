@@ -26,7 +26,7 @@ export default function PantallaAltas() {
   const [modalCentro, setModalCentro] = useState(false);
   const [modalEscanear, setModalEscanear] = useState(false);
   const [modalNuevaGarantia, setModalNuevaGarantia] = useState(false);
-  
+
   // MODAL DE CONFIRMACIÓN PARA ELIMINAR
   const [modalConfirmarEliminar, setModalConfirmarEliminar] = useState(false);
   const [itemAEliminar, setItemAEliminar] = useState<{ tipo: string; id: number; nombre: string } | null>(null);
@@ -72,18 +72,12 @@ export default function PantallaAltas() {
         supabase.from("familia").select("*"),
         supabase.from("marca").select("*"),
       ]);
-      
+
       // Ordenar alfabéticamente sin importar mayúsculas (A-Z)
-      const centrosOrdenados = (resC.data || []).sort((a, b) => 
-        a.centro.toLowerCase().localeCompare(b.centro.toLowerCase())
-      );
-      const familiasOrdenadas = (resF.data || []).sort((a, b) => 
-        a.familia.toLowerCase().localeCompare(b.familia.toLowerCase())
-      );
-      const marcasOrdenadas = (resM.data || []).sort((a, b) => 
-        a.marca.toLowerCase().localeCompare(b.marca.toLowerCase())
-      );
-      
+      const centrosOrdenados = (resC.data || []).sort((a, b) => a.centro.toLowerCase().localeCompare(b.centro.toLowerCase()));
+      const familiasOrdenadas = (resF.data || []).sort((a, b) => a.familia.toLowerCase().localeCompare(b.familia.toLowerCase()));
+      const marcasOrdenadas = (resM.data || []).sort((a, b) => a.marca.toLowerCase().localeCompare(b.marca.toLowerCase()));
+
       setCentros(centrosOrdenados);
       setFamilias(familiasOrdenadas);
       setMarcas(marcasOrdenadas);
@@ -104,10 +98,7 @@ export default function PantallaAltas() {
   const confirmarEliminarFamilia = async () => {
     if (!itemAEliminar) return;
     try {
-      const { error } = await supabase
-        .from("familia")
-        .delete()
-        .eq("id", itemAEliminar.id);
+      const { error } = await supabase.from("familia").delete().eq("id", itemAEliminar.id);
 
       if (error) throw error;
 
@@ -140,7 +131,7 @@ export default function PantallaAltas() {
         setForm({ ...form, tipo: data[0].familia });
       }
 
-      alert("✅ Familia agregada exitosamente");
+      alert("✅ Familia agregada correctamente");
       setNewFamilia("");
       setModalFamilia(false);
     } catch (error: any) {
@@ -160,10 +151,7 @@ export default function PantallaAltas() {
   const confirmarEliminarMarca = async () => {
     if (!itemAEliminar) return;
     try {
-      const { error } = await supabase
-        .from("marca")
-        .delete()
-        .eq("id", itemAEliminar.id);
+      const { error } = await supabase.from("marca").delete().eq("id", itemAEliminar.id);
 
       if (error) throw error;
 
@@ -196,7 +184,7 @@ export default function PantallaAltas() {
         setForm({ ...form, marca: data[0].marca });
       }
 
-      alert("✅ Marca agregada exitosamente");
+      alert("✅ Marca agregada correctamente");
       setNewMarca("");
       setModalMarca(false);
     } catch (error: any) {
@@ -216,10 +204,7 @@ export default function PantallaAltas() {
   const confirmarEliminarCentro = async () => {
     if (!itemAEliminar) return;
     try {
-      const { error } = await supabase
-        .from("centro")
-        .delete()
-        .eq("id", itemAEliminar.id);
+      const { error } = await supabase.from("centro").delete().eq("id", itemAEliminar.id);
 
       if (error) throw error;
 
@@ -252,7 +237,7 @@ export default function PantallaAltas() {
         setForm({ ...form, centro_compra: data[0].centro });
       }
 
-      alert("✅ Establecimiento agregado exitosamente");
+      alert("✅ Establecimiento agregado correctamente");
       setNewCentro("");
       setModalCentro(false);
     } catch (error: any) {
@@ -276,28 +261,28 @@ export default function PantallaAltas() {
   // ========== FUNCIÓN DENTRO DEL MODAL: Seleccionar documento ==========
   const handleEscanearDocumento = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({ 
+      const result = await DocumentPicker.getDocumentAsync({
         type: ["image/*", "application/pdf"],
         copyToCacheDirectory: true,
       });
-      
+
       if (result.canceled) return;
-      
+
       setSubiendo(true);
       const archivo = result.assets[0];
-      
+
       // Generar nombre con estructura: año_mes_día_código_nombre
       const ahora = new Date();
       const año = ahora.getFullYear();
       const mes = String(ahora.getMonth() + 1).padStart(2, "0");
       const día = String(ahora.getDate()).padStart(2, "0");
       const codigoAleatorio = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
-      
+
       // Obtener nombre sin extensión y extension
       const partes = archivo.name.split(".");
       const extension = partes[partes.length - 1];
       const nombreSinExtension = partes.slice(0, -1).join(".");
-      
+
       const nombreUnico = `${año}_${mes}_${día}_${codigoAleatorio}_${nombreSinExtension}.${extension}`;
 
       let fileBody;
@@ -307,7 +292,7 @@ export default function PantallaAltas() {
       // Subir a la carpeta pdf/ dentro del bucket garantias
       const { error } = await supabase.storage.from("garantias").upload(`pdf/${nombreUnico}`, fileBody);
       if (error) throw error;
-      
+
       setForm({ ...form, nombre_archivo: nombreUnico });
       alert("✅ Documento capturado y anexado correctamente.");
       setModalEscanear(false);
@@ -423,16 +408,13 @@ export default function PantallaAltas() {
                 ))}
               </Picker>
             </View>
-            <Pressable
-              style={styles.addButton}
-              onPress={() => setModalFamilia(true)}
-            >
+            <Pressable style={styles.addButton} onPress={() => setModalFamilia(true)}>
               <Text style={styles.addButtonText}>+</Text>
             </Pressable>
             <Pressable
               style={[styles.addButton, styles.deleteButton]}
               onPress={() => {
-                const familia = familias.find(f => f.familia === form.tipo);
+                const familia = familias.find((f) => f.familia === form.tipo);
                 if (familia) {
                   handleEliminarFamilia(familia.id, familia.familia);
                 } else {
@@ -455,16 +437,13 @@ export default function PantallaAltas() {
                 ))}
               </Picker>
             </View>
-            <Pressable
-              style={styles.addButton}
-              onPress={() => setModalMarca(true)}
-            >
+            <Pressable style={styles.addButton} onPress={() => setModalMarca(true)}>
               <Text style={styles.addButtonText}>+</Text>
             </Pressable>
             <Pressable
               style={[styles.addButton, styles.deleteButton]}
               onPress={() => {
-                const marca = marcas.find(m => m.marca === form.marca);
+                const marca = marcas.find((m) => m.marca === form.marca);
                 if (marca) {
                   handleEliminarMarca(marca.id, marca.marca);
                 } else {
@@ -488,8 +467,8 @@ export default function PantallaAltas() {
             </View>
             <View style={styles.halfInput}>
               <View style={styles.xlInputBox}>
-                <Picker 
-                  selectedValue={form.duracion_garantia} 
+                <Picker
+                  selectedValue={form.duracion_garantia}
                   onValueChange={(v) => setForm({ ...form, duracion_garantia: v })}
                   style={{ height: 80, fontSize: 22 }}
                 >
@@ -521,16 +500,13 @@ export default function PantallaAltas() {
                 ))}
               </Picker>
             </View>
-            <Pressable
-              style={styles.addButton}
-              onPress={() => setModalCentro(true)}
-            >
+            <Pressable style={styles.addButton} onPress={() => setModalCentro(true)}>
               <Text style={styles.addButtonText}>+</Text>
             </Pressable>
             <Pressable
               style={[styles.addButton, styles.deleteButton]}
               onPress={() => {
-                const centro = centros.find(c => c.centro === form.centro_compra);
+                const centro = centros.find((c) => c.centro === form.centro_compra);
                 if (centro) {
                   handleEliminarCentro(centro.id, centro.centro);
                 } else {
@@ -593,11 +569,7 @@ export default function PantallaAltas() {
           />
 
           <Pressable style={[styles.btnFile, form.nombre_archivo ? styles.btnFileOk : null]} onPress={handleAbrirModalEscaneo} disabled={subiendo}>
-            <Text style={styles.btnFileText}>
-              {form.nombre_archivo 
-                ? `📎 DOCUMENTACIÓN ADJUNTADA PREVIA` 
-                : "📸 ESCANEAR TICKET"}
-            </Text>
+            <Text style={styles.btnFileText}>{form.nombre_archivo ? `📎 DOCUMENTACIÓN ADJUNTADA PREVIA` : "📸 ESCANEAR TICKET"}</Text>
           </Pressable>
 
           <Pressable style={styles.btnSave} onPress={handleSave} disabled={loading}>
@@ -615,24 +587,16 @@ export default function PantallaAltas() {
       <Modal visible={modalNuevaGarantia} transparent={true} animationType="fade">
         <View style={[styles.centeredView, { justifyContent: "center" }]}>
           <View style={[styles.modalView, { width: "85%", maxWidth: 350 }]}>
-            <Text style={[styles.modalTitle, { textAlign: "center", marginBottom: 15, fontSize: 20 }]}>
-              ✨ ¡Garantía Registrada!
-            </Text>
+            <Text style={[styles.modalTitle, { textAlign: "center", marginBottom: 15, fontSize: 20 }]}>✨ ¡Garantía Registrada!</Text>
             <Text style={[styles.modalTitle, { textAlign: "center", marginBottom: 25, fontSize: 15, fontWeight: "400", color: "#6b7280" }]}>
               ¿Deseas registrar otra garantía?
             </Text>
 
             <View style={{ flexDirection: "row", gap: 12 }}>
-              <Pressable 
-                style={[styles.modalBtn, { backgroundColor: "#ef4444", flex: 1 }]}
-                onPress={handleIrAlMenu}
-              >
+              <Pressable style={[styles.modalBtn, { backgroundColor: "#ef4444", flex: 1 }]} onPress={handleIrAlMenu}>
                 <Text style={styles.modalBtnText}>❌ No, Ir al Menú</Text>
               </Pressable>
-              <Pressable 
-                style={[styles.modalBtn, { backgroundColor: "#10b981", flex: 1 }]}
-                onPress={handleNuevaGarantia}
-              >
+              <Pressable style={[styles.modalBtn, { backgroundColor: "#10b981", flex: 1 }]} onPress={handleNuevaGarantia}>
                 <Text style={styles.modalBtnText}>✅ Sí, Nueva</Text>
               </Pressable>
             </View>
@@ -646,7 +610,12 @@ export default function PantallaAltas() {
           <View style={styles.modalView}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Agregar Nueva Familia</Text>
-              <Pressable onPress={() => { setModalFamilia(false); setNewFamilia(""); }}>
+              <Pressable
+                onPress={() => {
+                  setModalFamilia(false);
+                  setNewFamilia("");
+                }}
+              >
                 <Text style={styles.closeX}>✕</Text>
               </Pressable>
             </View>
@@ -659,21 +628,16 @@ export default function PantallaAltas() {
               onChangeText={setNewFamilia}
             />
 
-            <Pressable
-              style={[styles.modalBtn, loadingFamilia && styles.modalBtnDisabled]}
-              onPress={handleAddFamilia}
-              disabled={loadingFamilia}
-            >
-              {loadingFamilia ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.modalBtnText}>✅ Guardar</Text>
-              )}
+            <Pressable style={[styles.modalBtn, loadingFamilia && styles.modalBtnDisabled]} onPress={handleAddFamilia} disabled={loadingFamilia}>
+              {loadingFamilia ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>✅ Guardar</Text>}
             </Pressable>
 
             <Pressable
               style={styles.modalBtnCancel}
-              onPress={() => { setModalFamilia(false); setNewFamilia(""); }}
+              onPress={() => {
+                setModalFamilia(false);
+                setNewFamilia("");
+              }}
             >
               <Text style={styles.modalBtnCancelText}>Cancelar</Text>
             </Pressable>
@@ -687,7 +651,12 @@ export default function PantallaAltas() {
           <View style={styles.modalView}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Agregar Nueva Marca</Text>
-              <Pressable onPress={() => { setModalMarca(false); setNewMarca(""); }}>
+              <Pressable
+                onPress={() => {
+                  setModalMarca(false);
+                  setNewMarca("");
+                }}
+              >
                 <Text style={styles.closeX}>✕</Text>
               </Pressable>
             </View>
@@ -700,21 +669,16 @@ export default function PantallaAltas() {
               onChangeText={setNewMarca}
             />
 
-            <Pressable
-              style={[styles.modalBtn, loadingMarca && styles.modalBtnDisabled]}
-              onPress={handleAddMarca}
-              disabled={loadingMarca}
-            >
-              {loadingMarca ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.modalBtnText}>✅ Guardar</Text>
-              )}
+            <Pressable style={[styles.modalBtn, loadingMarca && styles.modalBtnDisabled]} onPress={handleAddMarca} disabled={loadingMarca}>
+              {loadingMarca ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>✅ Guardar</Text>}
             </Pressable>
 
             <Pressable
               style={styles.modalBtnCancel}
-              onPress={() => { setModalMarca(false); setNewMarca(""); }}
+              onPress={() => {
+                setModalMarca(false);
+                setNewMarca("");
+              }}
             >
               <Text style={styles.modalBtnCancelText}>Cancelar</Text>
             </Pressable>
@@ -728,7 +692,12 @@ export default function PantallaAltas() {
           <View style={styles.modalView}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Agregar Establecimiento</Text>
-              <Pressable onPress={() => { setModalCentro(false); setNewCentro(""); }}>
+              <Pressable
+                onPress={() => {
+                  setModalCentro(false);
+                  setNewCentro("");
+                }}
+              >
                 <Text style={styles.closeX}>✕</Text>
               </Pressable>
             </View>
@@ -741,21 +710,16 @@ export default function PantallaAltas() {
               onChangeText={setNewCentro}
             />
 
-            <Pressable
-              style={[styles.modalBtn, loadingCentro && styles.modalBtnDisabled]}
-              onPress={handleAddCentro}
-              disabled={loadingCentro}
-            >
-              {loadingCentro ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.modalBtnText}>✅ Guardar</Text>
-              )}
+            <Pressable style={[styles.modalBtn, loadingCentro && styles.modalBtnDisabled]} onPress={handleAddCentro} disabled={loadingCentro}>
+              {loadingCentro ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>✅ Guardar</Text>}
             </Pressable>
 
             <Pressable
               style={styles.modalBtnCancel}
-              onPress={() => { setModalCentro(false); setNewCentro(""); }}
+              onPress={() => {
+                setModalCentro(false);
+                setNewCentro("");
+              }}
             >
               <Text style={styles.modalBtnCancelText}>Cancelar</Text>
             </Pressable>
@@ -776,9 +740,7 @@ export default function PantallaAltas() {
 
             <View style={styles.escaneoContent}>
               <Text style={styles.escaneoInfo}>
-                {Platform.OS === "web" 
-                  ? "Selecciona un documento desde tu PC" 
-                  : "Captura una foto del ticket con tu cámara"}
+                {Platform.OS === "web" ? "Selecciona un documento desde tu PC" : "Captura una foto del ticket con tu cámara"}
               </Text>
 
               {Platform.OS === "web" ? (
@@ -802,17 +764,11 @@ export default function PantallaAltas() {
               {subiendo ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.modalBtnText}>
-                  {Platform.OS === "web" ? "📁 Seleccionar Archivo" : "📸 Abrir Cámara"}
-                </Text>
+                <Text style={styles.modalBtnText}>{Platform.OS === "web" ? "📁 Seleccionar Archivo" : "📸 Abrir Cámara"}</Text>
               )}
             </Pressable>
 
-            <Pressable
-              style={styles.modalBtnCancel}
-              onPress={() => setModalEscanear(false)}
-              disabled={subiendo}
-            >
+            <Pressable style={styles.modalBtnCancel} onPress={() => setModalEscanear(false)} disabled={subiendo}>
               <Text style={styles.modalBtnCancelText}>Cancelar</Text>
             </Pressable>
           </View>
@@ -824,10 +780,8 @@ export default function PantallaAltas() {
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
             <Text style={styles.modalTitle}>⚠️ Confirmar Eliminación</Text>
-            
-            <Text style={styles.confirmText}>
-              ¿Estás seguro de que quieres eliminar "{itemAEliminar?.nombre}"?
-            </Text>
+
+            <Text style={styles.confirmText}>¿Estás seguro de que quieres eliminar "{itemAEliminar?.nombre}"?</Text>
             <Text style={styles.warningText}>Esta acción no se puede deshacer</Text>
 
             <View style={styles.buttonGroupConfirm}>
