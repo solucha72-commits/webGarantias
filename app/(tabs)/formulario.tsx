@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, FlatList, Pressable, Platform, TextInput, ScrollView, useWindowDimensions } from "react-native";
-import { useEffect, useState, useCallback } from "react";
+import { View, Text, StyleSheet, FlatList, Pressable, Platform, TextInput } from "react-native";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter } from "expo-router";
 
 type Garantia = {
   id: number;
@@ -19,31 +19,14 @@ export default function Formulario() {
   const [garantiasFiltradas, setGarantiasFiltradas] = useState<Garantia[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const router = useRouter();
-  
-  const windowDimensions = useWindowDimensions();
-  const isMobile = windowDimensions.width < 768;
 
-  // ========== FUNCIÓN PARA CARGAR GARANTÍAS ==========
-  const cargarGarantias = useCallback(async () => {
-    const { data } = await supabase
+  useEffect(() => {
+    supabase
       .from("garantias")
       .select("id,tipo,marca,modelo,importe,duracion_garantia,centro_compra,fechacompra")
-      .order("id", { ascending: false });
-    
-    setGarantias(data ?? []);
+      .order("id", { ascending: false })
+      .then(({ data }) => setGarantias(data ?? []));
   }, []);
-
-  // ========== RECARGAR CUANDO LA PANTALLA RECIBE FOCO ==========
-  useFocusEffect(
-    useCallback(() => {
-      cargarGarantias();
-    }, [cargarGarantias])
-  );
-
-  // ========== CARGAR INICIAL ==========
-  useEffect(() => {
-    cargarGarantias();
-  }, [cargarGarantias]);
 
   // ========== FILTRAR POR BÚSQUEDA ==========
   useEffect(() => {
@@ -68,133 +51,87 @@ export default function Formulario() {
     return date.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
   };
 
-  const getRowStyle = () => isMobile ? styles.rowMobile : styles.rowDesktop;
-  const getLayoutStyle = () => isMobile ? styles.layoutMobile : styles.layoutDesktop;
-
   return (
     <View style={styles.mainContainer}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.cardContainer, isMobile && styles.cardMobile]}>
-          <View style={styles.contentWrapper}>
-            <Text style={[styles.header, isMobile && styles.headerMobile]}>Mis Garantías Guardadas</Text>
+      <View style={styles.contentWrapper}>
+        <Text style={styles.header}>Mis Garantías Guardadas</Text>
 
-            {/* ========== CAMPO DE BÚSQUEDA ========== */}
-            <TextInput
-              style={styles.searchInput}
-              placeholder="🔍 Buscar por familia, marca o centro..."
-              placeholderTextColor="#9ca3af"
-              value={busqueda}
-              onChangeText={setBusqueda}
-            />
+        {/* ========== CAMPO DE BÚSQUEDA ========== */}
+        <TextInput
+          style={styles.searchInput}
+          placeholder="🔍 Buscar por familia, marca o centro..."
+          placeholderTextColor="#9ca3af"
+          value={busqueda}
+          onChangeText={setBusqueda}
+        />
 
-            {garantiasFiltradas.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>{busqueda ? "🔍" : "📋"}</Text>
-                <Text style={styles.emptyText}>
-                  {busqueda ? "No se encontraron garantías" : "No hay garantías registradas"}
-                </Text>
-                {!busqueda && (
-                  <Pressable onPress={() => router.push("/altas")} style={styles.emptyButton}>
-                    <Text style={styles.emptyButtonText}>+ Nueva Garantía</Text>
-                  </Pressable>
-                )}
-              </View>
-            ) : (
-              <FlatList
-                data={garantiasFiltradas}
-                keyExtractor={(item) => item.id.toString()}
-                contentContainerStyle={styles.listPadding}
-                scrollEnabled={false}
-                ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
-                renderItem={({ item }) => (
-                  <Pressable
-                    style={({ pressed }) => [isMobile ? styles.rowMobile : styles.rowDesktop, pressed && { opacity: 0.85 }]}
-                    onPress={() => router.push({ pathname: "/garantia", params: { id: item.id } })}
-                  >
-                    {isMobile ? (
-                      // LAYOUT MOBILE - COLUMNAS ORDENADAS
-                      <>
-                        <View style={styles.headerSection}>
-                          <Text style={styles.title}>{item.tipo} · {item.marca}</Text>
-                        </View>
-                        <View style={styles.contentSection}>
-                          {/* Fila 1: Modelo y Centro lado a lado */}
-                          <View style={styles.rowLayout}>
-                            <View style={styles.halfColumn}>
-                              <Text style={styles.label}>Modelo</Text>
-                              <Text style={styles.value}>{item.modelo}</Text>
-                            </View>
-                            <View style={styles.halfColumn}>
-                              <Text style={styles.label}>Centro</Text>
-                              <Text style={styles.value}>{item.centro_compra}</Text>
-                            </View>
-                          </View>
-                          
-                          {/* Fila 2: Fecha Compra y Precio lado a lado */}
-                          <View style={styles.rowLayout}>
-                            <View style={styles.halfColumn}>
-                              <Text style={styles.label}>Fecha Compra</Text>
-                              <Text style={styles.value}>{formatearFecha(item.fechacompra)}</Text>
-                            </View>
-                            <View style={styles.halfColumn}>
-                              <Text style={styles.label}>Precio</Text>
-                              <Text style={[styles.value, styles.priceBold]}>{item.importe}€</Text>
-                            </View>
-                          </View>
-                        </View>
-                        
-                        <View style={styles.priceSectionMobile}>
-                          <Text style={styles.tapText}>Ver detalles →</Text>
-                        </View>
-                      </>
-                    ) : (
-                      // LAYOUT DESKTOP - MISMO ORDEN QUE MOBILE PERO HORIZONTAL
-                      <>
-                        <View style={styles.headerSectionDesktop}>
-                          <Text style={styles.title}>{item.tipo} · {item.marca}</Text>
-                        </View>
-                        <View style={styles.contentSectionDesktop}>
-                          {/* Fila 1: Modelo y Centro lado a lado */}
-                          <View style={styles.rowLayout}>
-                            <View style={styles.halfColumn}>
-                              <Text style={styles.label}>Modelo</Text>
-                              <Text style={styles.value}>{item.modelo}</Text>
-                            </View>
-                            <View style={styles.halfColumn}>
-                              <Text style={styles.label}>Centro</Text>
-                              <Text style={styles.value}>{item.centro_compra}</Text>
-                            </View>
-                          </View>
-                          
-                          {/* Fila 2: Fecha Compra y Precio lado a lado */}
-                          <View style={styles.rowLayout}>
-                            <View style={styles.halfColumn}>
-                              <Text style={styles.label}>Fecha Compra</Text>
-                              <Text style={styles.value}>{formatearFecha(item.fechacompra)}</Text>
-                            </View>
-                            <View style={styles.halfColumn}>
-                              <Text style={styles.label}>Precio</Text>
-                              <Text style={[styles.value, styles.priceBold]}>{item.importe}€</Text>
-                            </View>
-                          </View>
-                        </View>
-                        
-                        <View style={styles.priceSectionMobile}>
-                          <Text style={styles.tapText}>Ver detalles →</Text>
-                        </View>
-                      </>
-                    )}
-                  </Pressable>
-                )}
-              />
+        {garantiasFiltradas.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>{busqueda ? "🔍" : "📋"}</Text>
+            <Text style={styles.emptyText}>
+              {busqueda ? "No se encontraron garantías" : "No hay garantías registradas"}
+            </Text>
+            {!busqueda && (
+              <Pressable onPress={() => router.push("/altas")} style={styles.emptyButton}>
+                <Text style={styles.emptyButtonText}>+ Nueva Garantía</Text>
+              </Pressable>
             )}
-
-            <Pressable onPress={() => router.push("/")} style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.85 }]}>
-              <Text style={styles.backText}>← Volver al Menú Principal</Text>
-            </Pressable>
           </View>
-        </View>
-      </ScrollView>
+        ) : (
+          <FlatList
+            data={garantiasFiltradas}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.listPadding}
+            ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+            renderItem={({ item }) => (
+              <Pressable
+                style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
+                onPress={() => router.push({ pathname: "/garantia", params: { id: item.id } })}
+              >
+                {/* HEADER: Tipo y Marca */}
+                <View style={styles.headerSection}>
+                  <Text style={styles.title}>
+                    {item.tipo} · {item.marca}
+                  </Text>
+                </View>
+
+                {/* CONTENIDO PRINCIPAL */}
+                <View style={styles.contentSection}>
+                  {/* FILA 1: Modelo */}
+                  <View style={styles.infoRow}>
+                    <Text style={styles.label}>Modelo</Text>
+                    <Text style={styles.value}>{item.modelo}</Text>
+                  </View>
+
+                  {/* FILA 2: Centro y Fecha */}
+                  <View style={styles.twoColumnRow}>
+                    <View style={styles.halfColumn}>
+                      <Text style={styles.label}>Centro</Text>
+                      <Text style={styles.value}>{item.centro_compra}</Text>
+                    </View>
+                    <View style={styles.halfColumn}>
+                      <Text style={styles.label}>Fecha Compra</Text>
+                      <Text style={styles.value}>{formatearFecha(item.fechacompra)}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* PRECIO A LA DERECHA */}
+                <View style={styles.priceSection}>
+                  <View style={styles.priceContainer}>
+                    <Text style={styles.price}>{item.importe}€</Text>
+                  </View>
+                  <Text style={styles.tapText}>Ver detalles →</Text>
+                </View>
+              </Pressable>
+            )}
+          />
+        )}
+
+        <Pressable onPress={() => router.push("/")} style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.85 }]}>
+          <Text style={styles.backText}>← Volver al Menú Principal</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -202,66 +139,31 @@ export default function Formulario() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#f0f4f8",
     alignItems: "center",
-    paddingVertical: 20,
-  },
-
-  scrollContent: {
-    alignItems: "center",
-    paddingHorizontal: 10,
-    minHeight: "100%",
-  },
-
-  cardContainer: {
-    width: "100%",
-    maxWidth: 1000,
-    backgroundColor: "#ffffff",
-    borderRadius: 32,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 15 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 12,
-      },
-      web: {
-        boxShadow: "0px 20px 40px rgba(0,0,0,0.06)",
-      },
-    }),
-  },
-
-  cardMobile: {
-    borderRadius: 16,
   },
 
   contentWrapper: {
+    flex: 1,
     width: "100%",
-    paddingHorizontal: 45,
-    paddingVertical: 40,
+    maxWidth: 1000,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
 
   header: {
     fontSize: 32,
     fontWeight: "900",
-    color: "#0f172a",
+    color: "#102a43",
     marginBottom: 24,
     textAlign: "center",
-    letterSpacing: -1,
   },
 
-  headerMobile: {
-    fontSize: 24,
-    marginBottom: 16,
-  },
-
+  // ========== CAMPO DE BÚSQUEDA ==========
   searchInput: {
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#fff",
     borderWidth: 2,
-    borderColor: "#e2e8f0",
+    borderColor: "#3b82f6",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -270,7 +172,9 @@ const styles = StyleSheet.create({
     color: "#1f2937",
   },
 
+  // ========== ESTADO VACÍO ==========
   emptyState: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 60,
@@ -301,72 +205,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
+  // ========== LISTA ==========
   listPadding: {
     paddingBottom: 40,
   },
 
-  // ========== LAYOUTS ==========
-  rowDesktop: {
-    backgroundColor: "#f8fafc",
+  row: {
+    backgroundColor: "#fff",
     padding: 20,
     borderRadius: 16,
     borderLeftWidth: 4,
-    borderLeftColor: "#2563eb",
-    ...Platform.select({
-      web: {
-        boxShadow: "0px 4px 12px rgba(0,0,0,0.05)",
-        cursor: "pointer",
-      },
-      default: { elevation: 2 },
-    }),
-  },
-
-  rowMobile: {
-    backgroundColor: "#f8fafc",
-    padding: 16,
-    borderRadius: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: "#2563eb",
-    elevation: 2,
-  },
-
-  layoutDesktop: {
+    borderLeftColor: "#3b82f6",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 16,
-  },
-
-  layoutMobile: {
-    flexDirection: "column",
-    justifyContent: "flex-start",
-    alignItems: "stretch",
-    gap: 12,
+    ...Platform.select({
+      web: {
+        boxShadow: "0px 4px 12px rgba(0,0,0,0.08)",
+        cursor: "pointer",
+      },
+      default: { elevation: 3 },
+    }),
   },
 
   // ========== SECTIONS ==========
   headerSection: {
-    width: "100%",
-  },
-
-  headerSectionDesktop: {
-    width: 150,
-    minWidth: 150,
+    marginBottom: 12,
+    flex: 1,
   },
 
   title: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#0f172a",
+    color: "#1f2937",
   },
 
   contentSection: {
-    gap: 12,
-    width: "100%",
-  },
-
-  contentSectionDesktop: {
-    flex: 1,
+    flex: 1.5,
     gap: 12,
   },
 
@@ -377,7 +253,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#64748b",
+    color: "#9ca3af",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -385,19 +261,12 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#475569",
+    color: "#374151",
   },
 
-  rowLayout: {
+  twoColumnRow: {
     flexDirection: "row",
     gap: 16,
-    width: "100%",
-  },
-
-  columnLayout: {
-    flexDirection: "column",
-    gap: 12,
-    width: "100%",
   },
 
   halfColumn: {
@@ -406,23 +275,9 @@ const styles = StyleSheet.create({
   },
 
   priceSection: {
-    alignItems: "flex-start",
-    justifyContent: "flex-start",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
     minWidth: 100,
-    width: "100%",
-  },
-
-  priceSectionMobile: {
-    marginTop: 8,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
-  },
-
-  priceBold: {
-    fontWeight: "900",
-    color: "#1e40af",
-    fontSize: 16,
   },
 
   priceContainer: {
@@ -431,7 +286,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: "#2563eb",
+    borderColor: "#3b82f6",
   },
 
   price: {
@@ -443,25 +298,25 @@ const styles = StyleSheet.create({
 
   tapText: {
     fontSize: 12,
-    color: "#94a3b8",
+    color: "#9ca3af",
     marginTop: 8,
     fontWeight: "600",
   },
 
   // ========== BOTÓN VOLVER ==========
   backButton: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#3b82f6",
     paddingVertical: 14,
     paddingHorizontal: 40,
-    borderRadius: 18,
+    borderRadius: 10,
     marginTop: 30,
-    marginBottom: 0,
+    marginBottom: 20,
     alignItems: "center",
     justifyContent: "center",
     elevation: 2,
     ...Platform.select({
       web: {
-        boxShadow: "0px 4px 12px rgba(37, 99, 235, 0.3)",
+        boxShadow: "0px 4px 12px rgba(59, 130, 246, 0.3)",
         cursor: "pointer",
       },
     }),
