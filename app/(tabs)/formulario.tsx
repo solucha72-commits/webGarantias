@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, FlatList, Pressable, Platform, TextInput, ScrollView } from "react-native";
+import { View, Text, StyleSheet, FlatList, Pressable, Platform, TextInput, ScrollView, useWindowDimensions } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -19,6 +19,9 @@ export default function Formulario() {
   const [garantiasFiltradas, setGarantiasFiltradas] = useState<Garantia[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const router = useRouter();
+  
+  const windowDimensions = useWindowDimensions();
+  const isMobile = windowDimensions.width < 768;
 
   // ========== FUNCIÓN PARA CARGAR GARANTÍAS ==========
   const cargarGarantias = useCallback(async () => {
@@ -65,89 +68,131 @@ export default function Formulario() {
     return date.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
   };
 
+  const getRowStyle = () => isMobile ? styles.rowMobile : styles.rowDesktop;
+  const getLayoutStyle = () => isMobile ? styles.layoutMobile : styles.layoutDesktop;
+
   return (
     <View style={styles.mainContainer}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.cardContainer}>
-        <View style={styles.contentWrapper}>
-          <Text style={styles.header}>Mis Garantías Guardadas</Text>
+        <View style={[styles.cardContainer, isMobile && styles.cardMobile]}>
+          <View style={styles.contentWrapper}>
+            <Text style={[styles.header, isMobile && styles.headerMobile]}>Mis Garantías Guardadas</Text>
 
-          {/* ========== CAMPO DE BÚSQUEDA ========== */}
-          <TextInput
-            style={styles.searchInput}
-            placeholder="🔍 Buscar por familia, marca o centro..."
-            placeholderTextColor="#9ca3af"
-            value={busqueda}
-            onChangeText={setBusqueda}
-          />
+            {/* ========== CAMPO DE BÚSQUEDA ========== */}
+            <TextInput
+              style={styles.searchInput}
+              placeholder="🔍 Buscar por familia, marca o centro..."
+              placeholderTextColor="#9ca3af"
+              value={busqueda}
+              onChangeText={setBusqueda}
+            />
 
-          {garantiasFiltradas.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>{busqueda ? "🔍" : "📋"}</Text>
-            <Text style={styles.emptyText}>
-              {busqueda ? "No se encontraron garantías" : "No hay garantías registradas"}
-            </Text>
-            {!busqueda && (
-              <Pressable onPress={() => router.push("/altas")} style={styles.emptyButton}>
-                <Text style={styles.emptyButtonText}>+ Nueva Garantía</Text>
-              </Pressable>
+            {garantiasFiltradas.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyIcon}>{busqueda ? "🔍" : "📋"}</Text>
+                <Text style={styles.emptyText}>
+                  {busqueda ? "No se encontraron garantías" : "No hay garantías registradas"}
+                </Text>
+                {!busqueda && (
+                  <Pressable onPress={() => router.push("/altas")} style={styles.emptyButton}>
+                    <Text style={styles.emptyButtonText}>+ Nueva Garantía</Text>
+                  </Pressable>
+                )}
+              </View>
+            ) : (
+              <FlatList
+                data={garantiasFiltradas}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={styles.listPadding}
+                scrollEnabled={false}
+                ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+                renderItem={({ item }) => (
+                  <Pressable
+                    style={({ pressed }) => [isMobile ? styles.rowMobile : styles.rowDesktop, pressed && { opacity: 0.85 }]}
+                    onPress={() => router.push({ pathname: "/garantia", params: { id: item.id } })}
+                  >
+                    {isMobile ? (
+                      // LAYOUT MOBILE - COLUMNAS ORDENADAS
+                      <>
+                        <View style={styles.headerSection}>
+                          <Text style={styles.title}>{item.tipo} · {item.marca}</Text>
+                        </View>
+                        <View style={styles.contentSection}>
+                          {/* Fila 1: Modelo y Centro lado a lado */}
+                          <View style={styles.rowLayout}>
+                            <View style={styles.halfColumn}>
+                              <Text style={styles.label}>Modelo</Text>
+                              <Text style={styles.value}>{item.modelo}</Text>
+                            </View>
+                            <View style={styles.halfColumn}>
+                              <Text style={styles.label}>Centro</Text>
+                              <Text style={styles.value}>{item.centro_compra}</Text>
+                            </View>
+                          </View>
+                          
+                          {/* Fila 2: Fecha Compra y Precio lado a lado */}
+                          <View style={styles.rowLayout}>
+                            <View style={styles.halfColumn}>
+                              <Text style={styles.label}>Fecha Compra</Text>
+                              <Text style={styles.value}>{formatearFecha(item.fechacompra)}</Text>
+                            </View>
+                            <View style={styles.halfColumn}>
+                              <Text style={styles.label}>Precio</Text>
+                              <Text style={[styles.value, styles.priceBold]}>{item.importe}€</Text>
+                            </View>
+                          </View>
+                        </View>
+                        
+                        <View style={styles.priceSectionMobile}>
+                          <Text style={styles.tapText}>Ver detalles →</Text>
+                        </View>
+                      </>
+                    ) : (
+                      // LAYOUT DESKTOP - MISMO ORDEN QUE MOBILE PERO HORIZONTAL
+                      <>
+                        <View style={styles.headerSectionDesktop}>
+                          <Text style={styles.title}>{item.tipo} · {item.marca}</Text>
+                        </View>
+                        <View style={styles.contentSectionDesktop}>
+                          {/* Fila 1: Modelo y Centro lado a lado */}
+                          <View style={styles.rowLayout}>
+                            <View style={styles.halfColumn}>
+                              <Text style={styles.label}>Modelo</Text>
+                              <Text style={styles.value}>{item.modelo}</Text>
+                            </View>
+                            <View style={styles.halfColumn}>
+                              <Text style={styles.label}>Centro</Text>
+                              <Text style={styles.value}>{item.centro_compra}</Text>
+                            </View>
+                          </View>
+                          
+                          {/* Fila 2: Fecha Compra y Precio lado a lado */}
+                          <View style={styles.rowLayout}>
+                            <View style={styles.halfColumn}>
+                              <Text style={styles.label}>Fecha Compra</Text>
+                              <Text style={styles.value}>{formatearFecha(item.fechacompra)}</Text>
+                            </View>
+                            <View style={styles.halfColumn}>
+                              <Text style={styles.label}>Precio</Text>
+                              <Text style={[styles.value, styles.priceBold]}>{item.importe}€</Text>
+                            </View>
+                          </View>
+                        </View>
+                        
+                        <View style={styles.priceSectionMobile}>
+                          <Text style={styles.tapText}>Ver detalles →</Text>
+                        </View>
+                      </>
+                    )}
+                  </Pressable>
+                )}
+              />
             )}
+
+            <Pressable onPress={() => router.push("/")} style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.85 }]}>
+              <Text style={styles.backText}>← Volver al Menú Principal</Text>
+            </Pressable>
           </View>
-        ) : (
-          <FlatList
-            data={garantiasFiltradas}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={styles.listPadding}
-            ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
-            renderItem={({ item }) => (
-              <Pressable
-                style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
-                onPress={() => router.push({ pathname: "/garantia", params: { id: item.id } })}
-              >
-                {/* HEADER: Tipo y Marca */}
-                <View style={styles.headerSection}>
-                  <Text style={styles.title}>
-                    {item.tipo} · {item.marca}
-                  </Text>
-                </View>
-
-                {/* CONTENIDO PRINCIPAL */}
-                <View style={styles.contentSection}>
-                  {/* FILA 1: Modelo */}
-                  <View style={styles.infoRow}>
-                    <Text style={styles.label}>Modelo</Text>
-                    <Text style={styles.value}>{item.modelo}</Text>
-                  </View>
-
-                  {/* FILA 2: Centro y Fecha */}
-                  <View style={styles.twoColumnRow}>
-                    <View style={styles.halfColumn}>
-                      <Text style={styles.label}>Centro</Text>
-                      <Text style={styles.value}>{item.centro_compra}</Text>
-                    </View>
-                    <View style={styles.halfColumn}>
-                      <Text style={styles.label}>Fecha Compra</Text>
-                      <Text style={styles.value}>{formatearFecha(item.fechacompra)}</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* PRECIO A LA DERECHA */}
-                <View style={styles.priceSection}>
-                  <View style={styles.priceContainer}>
-                    <Text style={styles.price}>{item.importe}€</Text>
-                  </View>
-                  <Text style={styles.tapText}>Ver detalles →</Text>
-                </View>
-              </Pressable>
-            )}
-          />
-        )}
-
-        <Pressable onPress={() => router.push("/")} style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.85 }]}>
-          <Text style={styles.backText}>← Volver al Menú Principal</Text>
-        </Pressable>
-        </View>
         </View>
       </ScrollView>
     </View>
@@ -164,6 +209,7 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     alignItems: "center",
+    paddingHorizontal: 10,
   },
 
   cardContainer: {
@@ -171,7 +217,6 @@ const styles = StyleSheet.create({
     maxWidth: 1000,
     backgroundColor: "#ffffff",
     borderRadius: 32,
-    padding: 0,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -188,8 +233,11 @@ const styles = StyleSheet.create({
     }),
   },
 
+  cardMobile: {
+    borderRadius: 16,
+  },
+
   contentWrapper: {
-    flex: 1,
     width: "100%",
     paddingHorizontal: 45,
     paddingVertical: 40,
@@ -204,7 +252,11 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
   },
 
-  // ========== CAMPO DE BÚSQUEDA ==========
+  headerMobile: {
+    fontSize: 24,
+    marginBottom: 16,
+  },
+
   searchInput: {
     backgroundColor: "#f8fafc",
     borderWidth: 2,
@@ -217,9 +269,7 @@ const styles = StyleSheet.create({
     color: "#1f2937",
   },
 
-  // ========== ESTADO VACÍO ==========
   emptyState: {
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 60,
@@ -250,21 +300,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  // ========== LISTA ==========
   listPadding: {
     paddingBottom: 40,
   },
 
-  row: {
+  // ========== LAYOUTS ==========
+  rowDesktop: {
     backgroundColor: "#f8fafc",
     padding: 20,
     borderRadius: 16,
     borderLeftWidth: 4,
     borderLeftColor: "#2563eb",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 16,
     ...Platform.select({
       web: {
         boxShadow: "0px 4px 12px rgba(0,0,0,0.05)",
@@ -274,10 +320,37 @@ const styles = StyleSheet.create({
     }),
   },
 
+  rowMobile: {
+    backgroundColor: "#f8fafc",
+    padding: 16,
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: "#2563eb",
+    elevation: 2,
+  },
+
+  layoutDesktop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 16,
+  },
+
+  layoutMobile: {
+    flexDirection: "column",
+    justifyContent: "flex-start",
+    alignItems: "stretch",
+    gap: 12,
+  },
+
   // ========== SECTIONS ==========
   headerSection: {
-    marginBottom: 12,
-    flex: 1,
+    width: "100%",
+  },
+
+  headerSectionDesktop: {
+    width: 150,
+    minWidth: 150,
   },
 
   title: {
@@ -287,7 +360,12 @@ const styles = StyleSheet.create({
   },
 
   contentSection: {
-    flex: 1.5,
+    gap: 12,
+    width: "100%",
+  },
+
+  contentSectionDesktop: {
+    flex: 1,
     gap: 12,
   },
 
@@ -309,9 +387,16 @@ const styles = StyleSheet.create({
     color: "#475569",
   },
 
-  twoColumnRow: {
+  rowLayout: {
     flexDirection: "row",
     gap: 16,
+    width: "100%",
+  },
+
+  columnLayout: {
+    flexDirection: "column",
+    gap: 12,
+    width: "100%",
   },
 
   halfColumn: {
@@ -320,9 +405,23 @@ const styles = StyleSheet.create({
   },
 
   priceSection: {
-    alignItems: "flex-end",
-    justifyContent: "space-between",
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
     minWidth: 100,
+    width: "100%",
+  },
+
+  priceSectionMobile: {
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+  },
+
+  priceBold: {
+    fontWeight: "900",
+    color: "#1e40af",
+    fontSize: 16,
   },
 
   priceContainer: {
