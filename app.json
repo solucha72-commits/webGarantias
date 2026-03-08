@@ -25,7 +25,8 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/icon.png",
+      "appleTouchIcon": "./assets/images/icon.png"
     },
     "plugins": [
       "expo-router",
