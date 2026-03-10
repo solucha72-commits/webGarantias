@@ -3,7 +3,6 @@ import { Picker } from "@react-native-picker/picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { obtenerUrlPdfConFallback } from "@/lib/BucketManager";
 import { formatFecha } from "@/lib/utils/date";
 
 export default function GarantiaDetalle() {
@@ -11,7 +10,6 @@ export default function GarantiaDetalle() {
   const [g, setG] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [fechaVencimiento, setFechaVencimiento] = useState<string | null>(null);
   const [modalEditar, setModalEditar] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
@@ -45,7 +43,7 @@ export default function GarantiaDetalle() {
   const [loadingMarca, setLoadingMarca] = useState(false);
   const [loadingCentro, setLoadingCentro] = useState(false);
 
-  // Buckets gestionados por BucketManager
+  const BUCKETS = ["garantias", "garantias1", "garantias2", "garantias3", "garantias4"];
   const router = useRouter();
 
   useEffect(() => {
@@ -99,9 +97,30 @@ export default function GarantiaDetalle() {
   };
 
   const obtenerArchivoDeMultiplesBuckets = async (nombreArchivo: string) => {
-    const nombreLimpio = nombreArchivo.replace(/[\r\n\t]/g, "").trim();
-    const url = await obtenerUrlPdfConFallback(nombreLimpio);
-    setFileUrl(url);
+    const nombreLimpio = nombreArchivo.trim();
+
+    for (const bucket of BUCKETS) {
+      try {
+        const rutaCompleta = `pdf/${nombreLimpio}`;
+        const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(rutaCompleta);
+        const url = urlData.publicUrl;
+
+        try {
+          const response = await fetch(url, { method: "HEAD" });
+
+          if (response.ok) {
+            setFileUrl(url);
+            return;
+          }
+        } catch (fetchError) {
+          continue;
+        }
+      } catch (error: any) {
+        continue;
+      }
+    }
+
+    setFileUrl(null);
   };
 
   const handleAgregarFamilia = async () => {
@@ -430,22 +449,10 @@ export default function GarantiaDetalle() {
 
               <View style={styles.viewer}>
                 {fileUrl ? (
-                  isPDF ? (
-                    // PDF: iframe en web, mensaje en móvil
-                    Platform.OS === "web" ? (
-                      <iframe src={fileUrl} style={{ width: "100%", height: "100%", border: "none" } as any} />
-                    ) : (
-                      <View style={styles.loadingState}>
-                        <Text style={styles.loadingStateText}>📄 Abre el PDF en el navegador</Text>
-                      </View>
-                    )
+                  isPDF && Platform.OS === "web" ? (
+                    <iframe src={fileUrl} style={{ width: "100%", height: "100%", border: "none" } as any} />
                   ) : (
-                    // JPG/PNG: img en web, Image en móvil
-                    Platform.OS === "web" ? (
-                      <img src={fileUrl} style={{ width: "100%", height: "100%", objectFit: "contain" } as any} />
-                    ) : (
-                      <Image source={{ uri: fileUrl }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
-                    )
+                    <Image source={{ uri: fileUrl }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
                   )
                 ) : (
                   <View style={styles.loadingState}>
