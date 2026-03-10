@@ -5,8 +5,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { obtenerUrlPdfConFallback } from "@/lib/BucketManager";
 import { formatFecha } from "@/lib/utils/date";
-import * as Sharing from "expo-sharing";
-import * as FileSystem from "expo-file-system";
 
 export default function GarantiaDetalle() {
   const { id } = useLocalSearchParams();
@@ -294,108 +292,50 @@ export default function GarantiaDetalle() {
       return;
     }
 
+    if (!emailDestino.toLowerCase().endsWith("@gmail.com")) {
+      alert("❌ Esta función solo funciona con @gmail.com");
+      return;
+    }
+
     setEnviandoEmail(true);
 
     try {
-      let urlParaAdjuntar = fileUrl;
+      let cuerpoEmail = `Información de Garantía\n\n`;
+      cuerpoEmail += `Familia: ${g.tipo || "-"}\n`;
+      cuerpoEmail += `Marca: ${g.marca || "-"}\n`;
+      cuerpoEmail += `Modelo: ${g.modelo || "-"}\n`;
+      cuerpoEmail += `Importe: ${g.importe || "-"} EUR\n`;
+      cuerpoEmail += `Duración garantía: ${g.duracion_garantia || "-"} años\n`;
+      cuerpoEmail += `Centro de compra: ${g.centro_compra || "-"}\n`;
+      cuerpoEmail += `Fecha de compra: ${formatFecha(g.fechacompra) || "-"}\n`;
+      cuerpoEmail += `Fecha de vencimiento: ${fechaVencimiento || "-"}\n`;
 
-      // 1. GENERAR URL SEGURA (Para no exponer tu base de datos)
-      if (g.nombre_archivo) {
-        // IMPORTANTE: Asegúrate de que 'garantias' es el nombre exacto de tu bucket en Supabase
-        const { data, error } = await supabase.storage.from("garantias").createSignedUrl(g.nombre_archivo.trim(), 86400); // 1 hora de validez
-
-        if (error) {
-          console.error("Error de Storage:", error);
-          // Si falla la URL firmada, usamos la fileUrl normal como respaldo
-        } else if (data) {
-          urlParaAdjuntar = data.signedUrl;
-        }
+      if (g.observaciones) {
+        cuerpoEmail += `Observaciones: ${g.observaciones}\n`;
       }
 
-      // 2. CONSTRUIR CUERPO DEL EMAIL
-      const asunto = `Garantía ${g.marca} ${g.modelo}`;
-      const cuerpo =
-        `Hola,\n\nTe envío la información de la garantía:\n\nLa duración de este enlace SOLO es 24h, recomiendo imprimirla` +
-        `Marca: ${g.marca || "-"}\n` +
-        `Modelo: ${g.modelo || "-"}\n` +
-        `Vencimiento: ${fechaVencimiento || "-"}\n\n` +
-        `Puedes ver el documento aquí (enlace seguro):\n${urlParaAdjuntar}\n\n` +
-        `Saludos.`;
+      if (fileUrl) {
+        cuerpoEmail += `\nDocumento PDF: ${fileUrl}`;
+      }
 
-      // 3. ENVIAR
-      const mailto = `mailto:${emailDestino}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+      const asunto = encodeURIComponent(`Garantía: ${g.marca} ${g.modelo}`);
+      const cuerpo = encodeURIComponent(cuerpoEmail);
+      const mailtoLink = `mailto:${emailDestino}?subject=${asunto}&body=${cuerpo}`;
 
       if (Platform.OS === "web") {
-        window.location.href = mailto;
+        window.location.href = mailtoLink;
       } else {
         const { Linking } = require("react-native");
-        await Linking.openURL(mailto);
+        await Linking.openURL(mailtoLink);
       }
 
-      alert(`✅ Email preparado para: ${emailDestino}`);
+      alert(`✅ Cliente de correo abierto\nEnviando a: ${emailDestino}`);
       setModalEmail(false);
       setEmailDestino("");
     } catch (error: any) {
-      console.error("Error general:", error);
-      alert("❌ Error al procesar el envío: " + error.message);
+      alert("❌ Error al abrir el correo: " + error.message);
     } finally {
       setEnviandoEmail(false);
-    }
-  };
-
-  const handleEnviarWhatsApp = async () => {
-    try {
-      let urlSegura = "";
-
-      // 1. GENERAMOS LA URL FIRMADA POR 24 HORAS (86400 segundos)
-      if (g.nombre_archivo) {
-        // Usamos la carpeta 'pdf/' que es donde vive tu archivo real
-        const rutaRelativa = `pdf/${g.nombre_archivo.trim()}`;
-
-        const { data, error } = await supabase.storage.from("garantias").createSignedUrl(rutaRelativa, 86400);
-
-        if (error) {
-          console.error("Error al generar URL segura:", error);
-          // Si falla la firma, no detenemos el proceso, pero avisamos en consola
-        } else {
-          urlSegura = data.signedUrl;
-        }
-      }
-
-      // 2. CONSTRUIMOS EL MENSAJE COMPLETO
-      let mensaje = `*INFORMACIÓN DE GARANTÍA*\n\n`;
-      mensaje += `*Familia:* ${g.tipo || "-"}\n`;
-      mensaje += `*Marca:* ${g.marca || "-"}\n`;
-      mensaje += `*Modelo:* ${g.modelo || "-"}\n`;
-      mensaje += `*Importe:* ${g.importe || "-"} EUR\n`;
-      mensaje += `*Duración garantía:* ${g.duracion_garantia || "-"} años\n`;
-      mensaje += `*Centro de compra:* ${g.centro_compra || "-"}\n`;
-      mensaje += `*Fecha de compra:* ${formatFecha(g.fechacompra) || "-"}\n`;
-      mensaje += `*Fecha de vencimiento:* ${fechaVencimiento || "-"}\n`;
-
-      if (g.observaciones) {
-        mensaje += `*Observaciones:* ${g.observaciones}\n`;
-      }
-
-      if (urlSegura) {
-        mensaje += `\n*Ver Imagen (Enlace seguro 24h):*\n${urlSegura}`;
-      }
-
-      const mensajeCodificado = encodeURIComponent(mensaje);
-      const whatsappUrl = `https://wa.me/?text=${mensajeCodificado}`;
-
-      // 3. LÓGICA SEGÚN PLATAFORMA (Sobremesa o Móvil)
-      if (Platform.OS === "web") {
-        // Abre WhatsApp Web en una pestaña nueva
-        window.open(whatsappUrl, "_blank");
-      } else {
-        // En móvil, abrimos la App directamente
-        const { Linking } = require("react-native");
-        await Linking.openURL(whatsappUrl);
-      }
-    } catch (error) {
-      console.error("Error general en WhatsApp:", error);
-      alert("No se pudo preparar el mensaje de WhatsApp");
     }
   };
 
@@ -463,13 +403,11 @@ export default function GarantiaDetalle() {
           <Pressable onPress={handleAbrirEditar} style={({ pressed }) => [styles.editButton, pressed && { opacity: 0.85 }]}>
             <Text style={styles.editButtonText}>✏️ Editar</Text>
           </Pressable>
+
           <Pressable onPress={() => setModalAdvertencia(true)} style={({ pressed }) => [styles.emailButton, pressed && { opacity: 0.85 }]}>
             <Text style={styles.emailButtonText}>📧 Email</Text>
           </Pressable>
-          <Pressable onPress={handleEnviarWhatsApp} style={({ pressed }) => [styles.whatsappButton, pressed && { opacity: 0.85 }]}>
-            <Text style={styles.whatsappButtonText}>📲 WhatsApp</Text>
-          </Pressable>
-          
+
           <Pressable onPress={handleEliminarGarantia} style={({ pressed }) => [styles.deleteButton, pressed && { opacity: 0.85 }]}>
             <Text style={styles.deleteButtonText}>🗑️ Eliminar</Text>
           </Pressable>
@@ -501,11 +439,13 @@ export default function GarantiaDetalle() {
                         <Text style={styles.loadingStateText}>📄 Abre el PDF en el navegador</Text>
                       </View>
                     )
-                  ) : // JPG/PNG: img en web, Image en móvil
-                  Platform.OS === "web" ? (
-                    <img src={fileUrl} style={{ width: "100%", height: "100%", objectFit: "contain" } as any} />
                   ) : (
-                    <Image source={{ uri: fileUrl }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
+                    // JPG/PNG: img en web, Image en móvil
+                    Platform.OS === "web" ? (
+                      <img src={fileUrl} style={{ width: "100%", height: "100%", objectFit: "contain" } as any} />
+                    ) : (
+                      <Image source={{ uri: fileUrl }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
+                    )
                   )
                 ) : (
                   <View style={styles.loadingState}>
@@ -929,7 +869,7 @@ const styles = StyleSheet.create({
   editButtonText: { color: "#fff", fontSize: 15, fontWeight: "800" },
   emailButton: {
     flex: 1,
-    backgroundColor: "#aeca8bdf",
+    backgroundColor: "#10b981",
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 10,
@@ -1067,20 +1007,4 @@ const styles = StyleSheet.create({
   modalBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   modalBtnCancel: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: "center", borderWidth: 1, borderColor: "#cbd5e1" },
   modalBtnCancelText: { color: "#666", fontSize: 16, fontWeight: "600" },
-
-  whatsappButton: {
-    flex: 1,
-    backgroundColor: "#25D366",
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    elevation: 2,
-  },
-
-  whatsappButtonText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "800",
-  },
 });
