@@ -4,6 +4,19 @@ import { useRouter } from "expo-router";
 export default function Home() {
   const router = useRouter();
 
+  const handleLogout = () => {
+    const confirmed = window.confirm("¿Estás seguro de que deseas cerrar sesión?");
+
+    if (confirmed) {
+      // Limpiar sesión
+      sessionStorage.removeItem("usuarioActual");
+      localStorage.removeItem("usuarioActual");
+
+      // Recargar página (vuelve al login automáticamente)
+      window.location.reload();
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer} style={styles.mainBackground}>
       <View style={styles.screen}>
@@ -15,29 +28,42 @@ export default function Home() {
           </View>
 
           <View style={styles.buttonGrid}>
-            {/* 1. Botón Escanear - AHORA NAVEGA A /escaner */}
+            {/* 1. Botón Escanear */}
             <Pressable style={({ pressed }) => [styles.scanButton, pressed && { opacity: 0.8 }]} onPress={() => router.push("/escaner")}>
               <Text style={styles.buttonText}>📷 Escanear Ticket</Text>
             </Pressable>
 
-            {/* 2. Botón Formulario (Enlazado a tu nuevo archivo) */}
+            {/* 2. Botón Nueva Alta Manual */}
             <Pressable style={({ pressed }) => [styles.formButton, pressed && { opacity: 0.8 }]} onPress={() => router.push("/altas")}>
               <Text style={styles.buttonText}>📝 Nueva Alta Manual</Text>
             </Pressable>
 
+            {/* 3. Botón Informes */}
             <Pressable style={({ pressed }) => [styles.informesButton, pressed && { opacity: 0.8 }]} onPress={() => router.push("/informes")}>
               <Text style={styles.buttonText}>📊 Informes</Text>
             </Pressable>
 
             <View style={styles.divider} />
 
-            {/* 3. Botón para ver el Listado */}
+            {/* 4. Botón Mis Garantías Guardadas */}
             <Pressable style={({ pressed }) => [styles.listButton, pressed && { opacity: 0.8 }]} onPress={() => router.push("/formulario")}>
               <Text style={styles.listButtonText}>📋 Mis Garantías Guardadas</Text>
             </Pressable>
+
+            <View style={styles.divider} />
+
+            {/* 5. BOTÓN ADMIN */}
+            <Pressable style={({ pressed }) => [styles.adminButton, pressed && { opacity: 0.8 }]} onPress={() => router.push("/admin")}>
+              <Text style={styles.adminButtonText}>⚙️ Admin</Text>
+            </Pressable>
+
+            {/* 6. BOTÓN LOGOUT */}
+            <Pressable style={({ pressed }) => [styles.logoutButton, pressed && { opacity: 0.8 }]} onPress={handleLogout}>
+              <Text style={styles.logoutButtonText}>🚪 Salir</Text>
+            </Pressable>
           </View>
 
-          <Text style={styles.footerText}>Versión 1.0.2 - 2026</Text>
+          <Text style={styles.footerText}>Versión 2.4.3 - 2026</Text>
         </View>
       </View>
     </ScrollView>
@@ -47,7 +73,7 @@ export default function Home() {
 const styles = StyleSheet.create({
   mainBackground: {
     flex: 1,
-    backgroundColor: "#f1f5f9", // Un gris azulado más moderno
+    backgroundColor: "#f1f5f9",
   },
   scrollContainer: {
     flexGrow: 1,
@@ -63,7 +89,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   card: {
-    // Ancho ajustado para Web (500px) y móvil (100% - padding)
     width: "100%",
     paddingVertical: 60,
     paddingHorizontal: 45,
@@ -116,7 +141,7 @@ const styles = StyleSheet.create({
   },
   formButton: {
     width: "100%",
-    backgroundColor: "#10b981", // Verde esmeralda
+    backgroundColor: "#10b981",
     paddingVertical: 20,
     borderRadius: 18,
     alignItems: "center",
@@ -126,7 +151,7 @@ const styles = StyleSheet.create({
 
   informesButton: {
     width: "100%",
-    backgroundColor: "#f59e0b", // Naranja
+    backgroundColor: "#f59e0b",
     paddingVertical: 20,
     borderRadius: 18,
     alignItems: "center",
@@ -148,10 +173,38 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#e2e8f0",
+    marginBottom: 16,
     ...Platform.select({ web: { cursor: "pointer" } }),
   },
   listButtonText: {
     color: "#475569",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  adminButton: {
+    width: "100%",
+    backgroundColor: "#6366f1",
+    paddingVertical: 18,
+    borderRadius: 18,
+    alignItems: "center",
+    marginBottom: 16,
+    ...Platform.select({ web: { cursor: "pointer" } }),
+  },
+  adminButtonText: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  logoutButton: {
+    width: "100%",
+    backgroundColor: "#ef4444",
+    paddingVertical: 18,
+    borderRadius: 18,
+    alignItems: "center",
+    ...Platform.select({ web: { cursor: "pointer" } }),
+  },
+  logoutButtonText: {
+    color: "#ffffff",
     fontSize: 18,
     fontWeight: "700",
   },
