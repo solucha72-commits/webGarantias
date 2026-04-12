@@ -1,11 +1,15 @@
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
 import { View, ActivityIndicator } from "react-native";
+import { iniciarConexionDiaria } from "@/lib/conexion-diaria";
 
 export default function SplashScreen() {
   const router = useRouter();
 
   useEffect(() => {
+    // ✅ CONEXIÓN A SUPABASE CADA 24 HORAS
+    iniciarConexionDiaria();
+
     const checkAuth = async () => {
       // Espera 500ms para que React termine de renderizar
       await new Promise((resolve) => setTimeout(resolve, 500));

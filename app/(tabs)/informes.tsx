@@ -52,9 +52,9 @@ export default function Informes() {
 
       if (data) {
         setGarantias(data);
-        const tiposUnicos = [...new Set(data.map((g) => g.tipo))];
-        const marcasUnicas = [...new Set(data.map((g) => g.marca))];
-        const centrosUnicos = [...new Set(data.map((g) => g.centro_compra))];
+        const tiposUnicos = [...new Set(data.map((g) => g.tipo))].sort();
+        const marcasUnicas = [...new Set(data.map((g) => g.marca))].sort();
+        const centrosUnicos = [...new Set(data.map((g) => g.centro_compra))].sort();
         setTipos(tiposUnicos);
         setMarcas(marcasUnicas);
         setCentros(centrosUnicos);
@@ -96,6 +96,9 @@ export default function Informes() {
         return mostrarCaducadas ? caducada : !caducada;
       });
     }
+
+    // Ordenar alfabéticamente por TIPO
+    resultado = resultado.sort((a, b) => a.tipo.localeCompare(b.tipo));
 
     setGarantiasFiltradas(resultado);
   }, [filtroTipo, filtroMarca, filtroCentro, mostrarCaducadas, garantias]);

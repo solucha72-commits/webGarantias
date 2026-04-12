@@ -6,6 +6,7 @@ export default function AdminScreen() {
   const router = useRouter();
   const [usuarioActual, setUsuarioActual] = useState<any>(null);
   const [esAdmin, setEsAdmin] = useState(false);
+  const [esGerente, setEsGerente] = useState(false);
 
   useEffect(() => {
     const usuario = sessionStorage.getItem("usuarioActual");
@@ -13,6 +14,7 @@ export default function AdminScreen() {
       const parsed = JSON.parse(usuario);
       setUsuarioActual(parsed);
       setEsAdmin(parsed.rol === "admin");
+      setEsGerente(parsed.rol === "gerente");
     }
   }, []);
 
@@ -27,6 +29,11 @@ export default function AdminScreen() {
                 <Text style={styles.adminBadgeText}>🛡️ Administrador</Text>
               </View>
             )}
+            {esGerente && (
+              <View style={styles.gerenteBadge}>
+                <Text style={styles.gerenteBadgeText}>👔 Gerente</Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.infoSection}>
@@ -35,7 +42,7 @@ export default function AdminScreen() {
             <Text style={styles.infoLabel}>Email:</Text>
             <Text style={styles.infoValue}>{usuarioActual?.email || "Sin email"}</Text>
             <Text style={styles.infoLabel}>Rol:</Text>
-            <Text style={[styles.infoValue, esAdmin && styles.adminRolText]}>
+            <Text style={[styles.infoValue, (esAdmin || esGerente) && styles.adminRolText]}>
               {usuarioActual?.rol || "usuario"}
             </Text>
           </View>
@@ -93,6 +100,24 @@ export default function AdminScreen() {
                     <Text style={styles.menuButtonTitle}>Eliminar Usuarios</Text>
                     <Text style={styles.menuButtonDesc}>
                       Eliminar usuarios del sistema
+                    </Text>
+                  </View>
+                </View>
+              </Pressable>
+            )}
+
+            {/* 4. CONTROL DE ACCESOS — admin y gerente */}
+            {(esAdmin || esGerente) && (
+              <Pressable
+                style={({ pressed }) => [styles.menuButton, styles.auditButton, pressed && { opacity: 0.85 }]}
+                onPress={() => router.push("/control-accesos")}
+              >
+                <View style={styles.menuButtonContent}>
+                  <Text style={styles.menuButtonIcon}>🔐</Text>
+                  <View style={styles.menuButtonTextContainer}>
+                    <Text style={styles.menuButtonTitle}>Control de Accesos</Text>
+                    <Text style={styles.menuButtonDesc}>
+                      Monitorea todas las operaciones en BD
                     </Text>
                   </View>
                 </View>
@@ -160,6 +185,20 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#92400e",
   },
+  gerenteBadge: {
+    backgroundColor: "#dbeafe",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#3b82f6",
+  },
+  gerenteBadgeText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#1e40af",
+  },
   infoSection: {
     backgroundColor: "#f0f4f8",
     borderRadius: 16,
@@ -212,6 +251,10 @@ const styles = StyleSheet.create({
   deleteButton: {
     backgroundColor: "#fef2f2",
     borderColor: "#fecaca",
+  },
+  auditButton: {
+    backgroundColor: "#f0f9ff",
+    borderColor: "#7dd3fc",
   },
   menuButtonContent: {
     flexDirection: "row",

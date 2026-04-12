@@ -27,7 +27,7 @@ export default function Formulario() {
     const { data } = await supabase
       .from("garantias")
       .select("id,tipo,marca,modelo,importe,duracion_garantia,centro_compra,fechacompra")
-      .order("tipo", { ascending: true });
+      .order("id", { ascending: false });
     
     setGarantias(data ?? []);
   }, []);
