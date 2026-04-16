@@ -47,6 +47,8 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
+      console.log("🔐 [LOGIN] Intentando login como:", nombre);
+
       const { data, error } = await supabase
         .from("usuarios")
         .select("*")
@@ -59,16 +61,21 @@ export default function LoginScreen() {
         const nuevosIntentos = intentos + 1;
         setIntentos(nuevosIntentos);
 
-        // 📊 REGISTRAR INTENTO FALLIDO
-        await accesosService.registrarLoginIntento(nombre.trim(), false, {
+        console.warn("❌ [LOGIN] Login fallido. Intento:", nuevosIntentos);
+
+        // 📊 REGISTRAR INTENTO FALLIDO - ESPERAR A QUE TERMINE
+        console.log("📊 [LOGIN] Registrando LOGIN_FALLIDO...");
+        const resultFail = await accesosService.registrarLoginIntento(nombre.trim(), false, {
           motivo: "Usuario o contraseña incorrectos",
           intento: nuevosIntentos,
           maxIntentos: MAX_INTENTOS,
         });
+        console.log("📊 [LOGIN] Resultado registrarLoginIntento (fallido):", resultFail);
 
         if (nuevosIntentos >= MAX_INTENTOS) {
-          // 📊 REGISTRAR BLOQUEO
-          await accesosService.registrarAcceso({
+          // 📊 REGISTRAR BLOQUEO - ESPERAR A QUE TERMINE
+          console.log("🚫 [LOGIN] Máximo de intentos alcanzado. Registrando BLOQUEO...");
+          const resultBlock = await accesosService.registrarAcceso({
             nombre_usuario: nombre.trim(),
             accion: "BLOQUEO_INTENTOS",
             resultado: "FALLIDO",
@@ -78,6 +85,7 @@ export default function LoginScreen() {
               intentos: nuevosIntentos,
             },
           });
+          console.log("🚫 [LOGIN] Resultado registrarAcceso (bloqueo):", resultBlock);
 
           Alert.alert("❌ Acceso Denegado", `Máximo de intentos alcanzado (${MAX_INTENTOS}). La aplicación se cerrará.`, [
             {
@@ -97,12 +105,19 @@ export default function LoginScreen() {
       }
 
       if (data) {
-        // 📊 REGISTRAR LOGIN EXITOSO
-        await accesosService.registrarLoginIntento(nombre.trim(), true, {
+        console.log("✅ [LOGIN] Login exitoso para:", nombre);
+
+        // 📊 REGISTRAR LOGIN EXITOSO - ESPERAR A QUE TERMINE ANTES DE REDIRIGIR
+        console.log("📊 [LOGIN] Registrando LOGIN exitoso...");
+        const resultSuccess = await accesosService.registrarLoginIntento(nombre.trim(), true, {
           userId: data.id,
           rol: data.rol || "usuario",
           email: data.email,
         });
+        console.log("📊 [LOGIN] Resultado registrarLoginIntento (exitoso):", resultSuccess);
+
+        // ⏳ ESPERAR UN POCO PARA ASEGURAR QUE SE GUARDÓ
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         const sesionData = {
           id: data.id,
@@ -114,18 +129,23 @@ export default function LoginScreen() {
 
         sessionStorage.setItem("usuarioActual", JSON.stringify(sesionData));
         setIntentos(0);
+
+        console.log("🚀 [LOGIN] Redirigiendo a /(tabs)...");
         // @ts-ignore
         router.replace("/(tabs)");
       }
     } catch (err: any) {
-      // 📊 REGISTRAR ERROR
-      await accesosService.registrarError(nombre.trim(), err.message || "Error desconocido", "LOGIN", {
+      console.error("⚠️ [LOGIN] Error:", err);
+
+      // 📊 REGISTRAR ERROR - ESPERAR A QUE TERMINE
+      console.log("📊 [LOGIN] Registrando ERROR...");
+      const resultError = await accesosService.registrarError(nombre.trim(), err.message || "Error desconocido", "LOGIN", {
         tipoError: "EXCEPCION",
         stack: err.stack,
       });
+      console.log("📊 [LOGIN] Resultado registrarError:", resultError);
 
       Alert.alert("❌ Error", err.message || "Error al conectar");
-      console.error(err);
     } finally {
       setLoading(false);
     }

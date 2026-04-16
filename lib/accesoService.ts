@@ -15,25 +15,68 @@ export type AuditoriaLog = {
   created_at: string;
 };
 
-/**
- * ============================================
- * SERVICIO DE ACCESO Y AUDITORÍA
- * ============================================
- * Registra todos los accesos en la tabla auditoria_bd
- * Métodos disponibles:
- * - registrarAcceso()
- * - registrarLoginIntento()
- * - registrarError()
- * - registrarOperacion()
- * - registrarVista()
- * - obtenerAuditoria()
- * - obtenerEstadisticas()
- */
+// ============================================
+// HELPER: Obtener fecha y hora en formato ISO
+// ============================================
+const getFechaHora = () => {
+  const ahora = new Date();
+  const fecha = ahora.toISOString().split('T')[0]; // YYYY-MM-DD
+  const hora = ahora.toISOString().split('T')[1].split('.')[0]; // HH:mm:ss
+  return { fecha, hora };
+};
 
 class AccesoService {
   /**
+   * REGISTRA UN INTENTO DE LOGIN
+   * ✅ VERSIÓN CON FORMATO ISO CORRECTO
+   */
+  async registrarLoginIntento(usuario: string, exitoso: boolean, detalles?: any) {
+    try {
+      const { fecha, hora } = getFechaHora();
+
+      const payload = {
+        usuario_nombre: usuario,
+        operacion: exitoso ? "LOGIN" : "LOGIN_FALLIDO",
+        tabla_afectada: "usuarios",
+        fecha_acceso: fecha,
+        hora_acceso: hora,
+        detalles: exitoso
+          ? `✅ LOGIN EXITOSO - Usuario: ${usuario}`
+          : `❌ LOGIN FALLIDO - Usuario: ${usuario}. ${detalles?.motivo ? detalles.motivo : ""}`,
+        registro_id: null,
+        datos_anteriores: null,
+        datos_nuevos: detalles ? detalles : null,
+        cambios: null,
+      };
+
+      console.log("🔵 [accesoService] Insertando LOGIN:", payload);
+
+      const { data, error } = await supabase.from("auditoria_bd").insert([payload]).select();
+
+      if (error) {
+        console.error("❌ [accesoService] Error al registrar login:", {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        });
+        return false;
+      }
+
+      console.log("✅ [accesoService] LOGIN registrado exitosamente:", data);
+      return true;
+    } catch (error: any) {
+      console.error("❌ [accesoService] Excepción en registrarLoginIntento:", {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      });
+      return false;
+    }
+  }
+
+  /**
    * REGISTRA UN ACCESO GENÉRICO
-   * Uso general para cualquier acción en la aplicación
    */
   async registrarAcceso(datos: {
     nombre_usuario: string;
@@ -43,72 +86,34 @@ class AccesoService {
     detalles?: any;
   }) {
     try {
-      const ahora = new Date();
-      const fecha = ahora.toLocaleDateString("es-ES");
-      const hora = ahora.toLocaleTimeString("es-ES");
+      const { fecha, hora } = getFechaHora();
 
-      const { error } = await supabase.from("auditoria_bd").insert([
-        {
-          usuario_nombre: datos.nombre_usuario,
-          operacion: datos.accion,
-          tabla_afectada: datos.pagina_actual,
-          fecha_acceso: fecha,
-          hora_acceso: hora,
-          detalles: `[${datos.resultado}] ${datos.accion} en ${datos.pagina_actual}. ${datos.detalles ? JSON.stringify(datos.detalles) : ""}`,
-          registro_id: null,
-          datos_anteriores: null,
-          datos_nuevos: null,
-          cambios: null,
-        },
-      ]);
+      const payload = {
+        usuario_nombre: datos.nombre_usuario,
+        operacion: datos.accion,
+        tabla_afectada: datos.pagina_actual,
+        fecha_acceso: fecha,
+        hora_acceso: hora,
+        detalles: `[${datos.resultado}] ${datos.accion} en ${datos.pagina_actual}. ${datos.detalles ? JSON.stringify(datos.detalles) : ""}`,
+        registro_id: null,
+        datos_anteriores: null,
+        datos_nuevos: null,
+        cambios: null,
+      };
+
+      console.log("🔵 [accesoService] Insertando acceso:", payload);
+
+      const { data, error } = await supabase.from("auditoria_bd").insert([payload]).select();
 
       if (error) {
-        console.error("Error al registrar acceso:", error);
+        console.error("❌ [accesoService] Error al registrar acceso:", error);
         return null;
       }
 
+      console.log("✅ [accesoService] Acceso registrado:", data);
       return true;
-    } catch (error) {
-      console.error("Error en registrarAcceso:", error);
-      return null;
-    }
-  }
-
-  /**
-   * REGISTRA UN INTENTO DE LOGIN
-   * Usado en login.tsx para registrar intentos exitosos y fallidos
-   */
-  async registrarLoginIntento(usuario: string, exitoso: boolean, detalles?: any) {
-    try {
-      const ahora = new Date();
-      const fecha = ahora.toLocaleDateString("es-ES");
-      const hora = ahora.toLocaleTimeString("es-ES");
-
-      const { error } = await supabase.from("auditoria_bd").insert([
-        {
-          usuario_nombre: usuario,
-          operacion: exitoso ? "LOGIN" : "LOGIN_FALLIDO",
-          tabla_afectada: "usuarios",
-          fecha_acceso: fecha,
-          hora_acceso: hora,
-          detalles: exitoso
-            ? `✅ LOGIN EXITOSO - Usuario: ${usuario}`
-            : `❌ LOGIN FALLIDO - Usuario: ${usuario}. ${detalles?.motivo ? detalles.motivo : ""}`,
-          registro_id: null,
-          datos_anteriores: null,
-          datos_nuevos: detalles ? detalles : null,
-          cambios: null,
-        },
-      ]);
-
-      if (error) {
-        console.error("Error al registrar login:", error);
-        return null;
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Error en registrarLoginIntento:", error);
+    } catch (error: any) {
+      console.error("❌ [accesoService] Excepción en registrarAcceso:", error);
       return null;
     }
   }
@@ -118,33 +123,34 @@ class AccesoService {
    */
   async registrarError(usuario: string, mensaje: string, locacion: string, detalles?: any) {
     try {
-      const ahora = new Date();
-      const fecha = ahora.toLocaleDateString("es-ES");
-      const hora = ahora.toLocaleTimeString("es-ES");
+      const { fecha, hora } = getFechaHora();
 
-      const { error } = await supabase.from("auditoria_bd").insert([
-        {
-          usuario_nombre: usuario,
-          operacion: "ERROR",
-          tabla_afectada: locacion,
-          fecha_acceso: fecha,
-          hora_acceso: hora,
-          detalles: `⚠️ ERROR: ${mensaje}`,
-          registro_id: null,
-          datos_anteriores: null,
-          datos_nuevos: detalles ? detalles : null,
-          cambios: null,
-        },
-      ]);
+      const payload = {
+        usuario_nombre: usuario,
+        operacion: "ERROR",
+        tabla_afectada: locacion,
+        fecha_acceso: fecha,
+        hora_acceso: hora,
+        detalles: `⚠️ ERROR: ${mensaje}`,
+        registro_id: null,
+        datos_anteriores: null,
+        datos_nuevos: detalles ? detalles : null,
+        cambios: null,
+      };
+
+      console.log("🔵 [accesoService] Registrando error:", payload);
+
+      const { data, error } = await supabase.from("auditoria_bd").insert([payload]).select();
 
       if (error) {
-        console.error("Error al registrar error:", error);
+        console.error("❌ [accesoService] Error al registrar error:", error);
         return null;
       }
 
+      console.log("✅ [accesoService] Error registrado:", data);
       return true;
-    } catch (error) {
-      console.error("Error en registrarError:", error);
+    } catch (error: any) {
+      console.error("❌ [accesoService] Excepción en registrarError:", error);
       return null;
     }
   }
@@ -154,33 +160,34 @@ class AccesoService {
    */
   async registrarLogout(usuario: string, duracionMinutos: number) {
     try {
-      const ahora = new Date();
-      const fecha = ahora.toLocaleDateString("es-ES");
-      const hora = ahora.toLocaleTimeString("es-ES");
+      const { fecha, hora } = getFechaHora();
 
-      const { error } = await supabase.from("auditoria_bd").insert([
-        {
-          usuario_nombre: usuario,
-          operacion: "LOGOUT",
-          tabla_afectada: "usuarios",
-          fecha_acceso: fecha,
-          hora_acceso: hora,
-          detalles: `🔴 LOGOUT - Usuario: ${usuario} (${duracionMinutos} minutos conectado)`,
-          registro_id: null,
-          datos_anteriores: null,
-          datos_nuevos: { duracion_minutos: duracionMinutos },
-          cambios: null,
-        },
-      ]);
+      const payload = {
+        usuario_nombre: usuario,
+        operacion: "LOGOUT",
+        tabla_afectada: "usuarios",
+        fecha_acceso: fecha,
+        hora_acceso: hora,
+        detalles: `🔴 LOGOUT - Usuario: ${usuario} (${duracionMinutos} minutos conectado)`,
+        registro_id: null,
+        datos_anteriores: null,
+        datos_nuevos: { duracion_minutos: duracionMinutos },
+        cambios: null,
+      };
+
+      console.log("🔵 [accesoService] Registrando logout:", payload);
+
+      const { data, error } = await supabase.from("auditoria_bd").insert([payload]).select();
 
       if (error) {
-        console.error("Error al registrar logout:", error);
+        console.error("❌ [accesoService] Error al registrar logout:", error);
         return null;
       }
 
+      console.log("✅ [accesoService] Logout registrado:", data);
       return true;
-    } catch (error) {
-      console.error("Error en registrarLogout:", error);
+    } catch (error: any) {
+      console.error("❌ [accesoService] Excepción en registrarLogout:", error);
       return null;
     }
   }
@@ -199,9 +206,7 @@ class AccesoService {
     detalles: string = "",
   ) {
     try {
-      const ahora = new Date();
-      const fecha = ahora.toLocaleDateString("es-ES");
-      const hora = ahora.toLocaleTimeString("es-ES");
+      const { fecha, hora } = getFechaHora();
 
       const iconoOp = {
         INSERT: "➕",
@@ -209,29 +214,32 @@ class AccesoService {
         DELETE: "🗑️",
       };
 
-      const { error } = await supabase.from("auditoria_bd").insert([
-        {
-          usuario_nombre: usuario,
-          operacion: operacion,
-          tabla_afectada: tabla,
-          registro_id: registroId,
-          fecha_acceso: fecha,
-          hora_acceso: hora,
-          datos_anteriores: datosAnteriores,
-          datos_nuevos: datosNuevos,
-          cambios: cambios,
-          detalles: `${iconoOp[operacion] || "📋"} ${operacion} en ${tabla}. ${detalles}`,
-        },
-      ]);
+      const payload = {
+        usuario_nombre: usuario,
+        operacion: operacion,
+        tabla_afectada: tabla,
+        registro_id: registroId,
+        fecha_acceso: fecha,
+        hora_acceso: hora,
+        datos_anteriores: datosAnteriores,
+        datos_nuevos: datosNuevos,
+        cambios: cambios,
+        detalles: `${iconoOp[operacion] || "📋"} ${operacion} en ${tabla}. ${detalles}`,
+      };
+
+      console.log(`🔵 [accesoService] Registrando ${operacion}:`, payload);
+
+      const { data, error } = await supabase.from("auditoria_bd").insert([payload]).select();
 
       if (error) {
-        console.error(`Error al registrar ${operacion}:`, error);
+        console.error(`❌ [accesoService] Error al registrar ${operacion}:`, error);
         return null;
       }
 
+      console.log(`✅ [accesoService] ${operacion} registrado:`, data);
       return true;
-    } catch (error) {
-      console.error("Error en registrarOperacion:", error);
+    } catch (error: any) {
+      console.error("❌ [accesoService] Excepción en registrarOperacion:", error);
       return null;
     }
   }
@@ -241,33 +249,34 @@ class AccesoService {
    */
   async registrarVista(usuario: string, seccion: string) {
     try {
-      const ahora = new Date();
-      const fecha = ahora.toLocaleDateString("es-ES");
-      const hora = ahora.toLocaleTimeString("es-ES");
+      const { fecha, hora } = getFechaHora();
 
-      const { error } = await supabase.from("auditoria_bd").insert([
-        {
-          usuario_nombre: usuario,
-          operacion: "VIEW",
-          tabla_afectada: seccion,
-          fecha_acceso: fecha,
-          hora_acceso: hora,
-          detalles: `👁️ Usuario accedió a ${seccion}`,
-          registro_id: null,
-          datos_anteriores: null,
-          datos_nuevos: null,
-          cambios: null,
-        },
-      ]);
+      const payload = {
+        usuario_nombre: usuario,
+        operacion: "VIEW",
+        tabla_afectada: seccion,
+        fecha_acceso: fecha,
+        hora_acceso: hora,
+        detalles: `👁️ Usuario accedió a ${seccion}`,
+        registro_id: null,
+        datos_anteriores: null,
+        datos_nuevos: null,
+        cambios: null,
+      };
+
+      console.log("🔵 [accesoService] Registrando vista:", payload);
+
+      const { data, error } = await supabase.from("auditoria_bd").insert([payload]).select();
 
       if (error) {
-        console.error("Error al registrar vista:", error);
+        console.error("❌ [accesoService] Error al registrar vista:", error);
         return null;
       }
 
+      console.log("✅ [accesoService] Vista registrada:", data);
       return true;
-    } catch (error) {
-      console.error("Error en registrarVista:", error);
+    } catch (error: any) {
+      console.error("❌ [accesoService] Excepción en registrarVista:", error);
       return null;
     }
   }
@@ -283,34 +292,43 @@ class AccesoService {
     limite?: number;
   }): Promise<AuditoriaLog[]> {
     try {
-      let query = supabase.from("auditoria_bd").select("*");
+      console.log("🔵 [accesoService] Obteniendo auditoría con filtros:", filtros);
 
-      if (filtros?.tabla) {
+      let query = supabase
+        .from("auditoria_bd")
+        .select(
+          "id, usuario_nombre, tabla_afectada, operacion, registro_id, datos_anteriores, datos_nuevos, cambios, fecha_acceso, hora_acceso, detalles, created_at"
+        );
+
+      if (filtros?.tabla && filtros.tabla !== "") {
         query = query.eq("tabla_afectada", filtros.tabla);
       }
 
-      if (filtros?.operacion) {
+      if (filtros?.operacion && filtros.operacion !== "") {
         query = query.eq("operacion", filtros.operacion);
       }
 
-      if (filtros?.fecha) {
+      if (filtros?.fecha && filtros.fecha !== "") {
         query = query.eq("fecha_acceso", filtros.fecha);
       }
 
-      if (filtros?.usuario) {
+      if (filtros?.usuario && filtros.usuario !== "") {
         query = query.eq("usuario_nombre", filtros.usuario);
       }
 
-      const { data, error } = await query.order("created_at", { ascending: false }).limit(filtros?.limite || 100);
+      const { data, error } = await query
+        .order("created_at", { ascending: false })
+        .limit(filtros?.limite || 500);
 
       if (error) {
-        console.error("Error al obtener auditoría:", error);
+        console.error("❌ [accesoService] Error en obtenerAuditoria:", error);
         return [];
       }
 
-      return data || [];
-    } catch (error) {
-      console.error("Error en obtenerAuditoria:", error);
+      console.log("✅ [accesoService] Auditoría obtenida:", data?.length || 0, "registros");
+      return (data as AuditoriaLog[]) || [];
+    } catch (error: any) {
+      console.error("❌ [accesoService] Excepción en obtenerAuditoria:", error);
       return [];
     }
   }
@@ -320,18 +338,35 @@ class AccesoService {
    */
   async obtenerEstadisticas(): Promise<any> {
     try {
-      // Total de operaciones
-      const { count: totalOps } = await supabase.from("auditoria_bd").select("*", { count: "exact", head: true });
+      console.log("🔵 [accesoService] Obteniendo estadísticas...");
 
-      // Usuarios únicos
-      const { data: usuarios } = await supabase.from("auditoria_bd").select("usuario_nombre").distinct();
+      const { count: totalOps, error: errorCount } = await supabase
+        .from("auditoria_bd")
+        .select("*", { count: "exact", head: true });
 
-      // Por operación
-      const { data: porOp } = await supabase.from("auditoria_bd").select("operacion");
+      if (errorCount) {
+        console.error("❌ Error al contar operaciones:", errorCount);
+      }
+
+      const { data: usuarios, error: errorUsuarios } = await supabase
+        .from("auditoria_bd")
+        .select("usuario_nombre");
+
+      if (errorUsuarios) {
+        console.error("❌ Error al obtener usuarios:", errorUsuarios);
+      }
+
+      const usuariosUnicos = usuarios ? [...new Set(usuarios.map((u: any) => u.usuario_nombre))].length : 0;
+
+      const { data: porOp, error: errorOp } = await supabase.from("auditoria_bd").select("operacion");
+
+      if (errorOp) {
+        console.error("❌ Error al obtener operaciones:", errorOp);
+      }
 
       const estadisticas: any = {
         total: totalOps || 0,
-        usuariosUnicos: usuarios?.length || 0,
+        usuariosUnicos: usuariosUnicos,
         porOperacion: {
           LOGIN: 0,
           LOGIN_FALLIDO: 0,
@@ -341,19 +376,20 @@ class AccesoService {
           DELETE: 0,
           VIEW: 0,
           ERROR: 0,
+          ENTRADA_DIARIA: 0,
         },
       };
 
-      // Contar por operación
       porOp?.forEach((log: any) => {
         if (estadisticas.porOperacion[log.operacion] !== undefined) {
           estadisticas.porOperacion[log.operacion]++;
         }
       });
 
+      console.log("✅ [accesoService] Estadísticas:", estadisticas);
       return estadisticas;
-    } catch (error) {
-      console.error("Error en obtenerEstadisticas:", error);
+    } catch (error: any) {
+      console.error("❌ [accesoService] Excepción en obtenerEstadisticas:", error);
       return null;
     }
   }
@@ -376,7 +412,7 @@ class AccesoService {
       }
 
       return data || [];
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error en obtenerSesionesUsuario:", error);
       return [];
     }
@@ -387,7 +423,11 @@ class AccesoService {
    */
   async generarReportePorFecha(fecha: string): Promise<AuditoriaLog[]> {
     try {
-      const { data, error } = await supabase.from("auditoria_bd").select("*").eq("fecha_acceso", fecha).order("hora_acceso", { ascending: true });
+      const { data, error } = await supabase
+        .from("auditoria_bd")
+        .select("*")
+        .eq("fecha_acceso", fecha)
+        .order("hora_acceso", { ascending: true });
 
       if (error) {
         console.error("Error al generar reporte:", error);
@@ -395,7 +435,7 @@ class AccesoService {
       }
 
       return data || [];
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error en generarReportePorFecha:", error);
       return [];
     }
@@ -406,7 +446,11 @@ class AccesoService {
    */
   async generarReportePorUsuario(usuario: string): Promise<AuditoriaLog[]> {
     try {
-      const { data, error } = await supabase.from("auditoria_bd").select("*").eq("usuario_nombre", usuario).order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("auditoria_bd")
+        .select("*")
+        .eq("usuario_nombre", usuario)
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error al generar reporte:", error);
@@ -414,25 +458,28 @@ class AccesoService {
       }
 
       return data || [];
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error en generarReportePorUsuario:", error);
       return [];
     }
   }
 
   /**
-   * OBTIENE USUARIOS ACTIVOS (LOGINS SIN LOGOUT EN LAS ÚLTIMAS 8 HORAS)
+   * OBTIENE USUARIOS ACTIVOS
    */
   async obtenerUsuariosActivos(): Promise<any[]> {
     try {
-      const { data, error } = await supabase.from("auditoria_bd").select("*").eq("operacion", "LOGIN").order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("auditoria_bd")
+        .select("*")
+        .eq("operacion", "LOGIN")
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error al obtener usuarios activos:", error);
         return [];
       }
 
-      // Filtrar últimas 8 horas
       const ahora = new Date();
       const hace8Horas = new Date(ahora.getTime() - 8 * 60 * 60 * 1000);
 
@@ -441,21 +488,16 @@ class AccesoService {
         return created > hace8Horas;
       });
 
-      // Eliminar duplicados (mismo usuario)
-      const usuariosUnicos = Array.from(new Map(activos.map((item: any) => [item.usuario_nombre, item])).values());
+      const usuariosUnicos = Array.from(
+        new Map(activos.map((item: any) => [item.usuario_nombre, item])).values()
+      );
 
       return usuariosUnicos;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error en obtenerUsuariosActivos:", error);
       return [];
     }
   }
 }
 
-/**
- * EXPORTAR LA INSTANCIA DEL SERVICIO
- * Uso en cualquier archivo:
- * import accesosService from "@/lib/accesoService";
- * await accesosService.registrarAcceso({ ... });
- */
 export default new AccesoService();

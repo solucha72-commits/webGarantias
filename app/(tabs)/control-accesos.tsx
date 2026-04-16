@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import accesoService, { AuditoriaLog } from "@/lib/accesoService";
 
-function ControlAccesosScreen() {
+export default function ControlAccesos() {
   const router = useRouter();
   const [usuario, setUsuario] = useState<any>(null);
   const [accesos, setAccesos] = useState<any[]>([]);
@@ -434,4 +434,4 @@ const styles = StyleSheet.create({
   modalValue: { fontSize: 13, color: "#0f172a", fontWeight: "500" },
 });
 
-export default ControlAccesosScreen;
+
