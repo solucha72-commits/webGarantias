@@ -223,7 +223,7 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.infoBox}>
-          <Text style={styles.infoBoldText}>🧪 by: WarrantyVault :</Text>
+          <Text style={styles.infoBoldText}>🧪 by: Valor en futuro </Text>
         </View>
       </View>
     </ScrollView>
