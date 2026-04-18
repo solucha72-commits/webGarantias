@@ -219,13 +219,11 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>v2.4.3 - 2026</Text>
+          <Text style={styles.footerText}>v2.4.8 - 2026</Text>
         </View>
 
         <View style={styles.infoBox}>
-          <Text style={styles.infoBoldText}>🧪 Datos de prueba:</Text>
-          <Text style={styles.infoText}>Nombre: admin</Text>
-          <Text style={styles.infoText}>Contraseña: admin</Text>
+          <Text style={styles.infoBoldText}>🧪 by: WarrantyVault :</Text>
         </View>
       </View>
     </ScrollView>

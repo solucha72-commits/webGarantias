@@ -290,14 +290,26 @@ export default function PantallaAltas() {
       fileBody = await res.blob();
 
       // Subir a la carpeta pdf/ dentro del bucket garantias
-      const { error } = await supabase.storage.from("garantias").upload(`pdf/${nombreUnico}`, fileBody);
-      if (error) throw error;
+      console.log(`📤 Intentando subir a: pdf/${nombreUnico}`);
+      const { data, error } = await supabase.storage.from("garantias").upload(`pdf/${nombreUnico}`, fileBody, {
+        cacheControl: '3600',
+        upsert: false
+      });
+      
+      if (error) {
+        console.error("❌ Error de Supabase:", error);
+        throw error;
+      }
+      
+      console.log("✅ Archivo subido exitosamente:", data);
 
-      setForm({ ...form, nombre_archivo: nombreUnico });
+      // CORRECCIÓN: Guardar con la ruta completa (pdf/nombre_archivo)
+      setForm({ ...form, nombre_archivo: `pdf/${nombreUnico}` });
       alert("✅ Documento capturado y anexado correctamente.");
       setModalEscanear(false);
     } catch (error: any) {
-      alert("Error al capturar documento: " + error.message);
+      console.error("❌ Error completo:", error);
+      alert("❌ Error al capturar documento:\n" + (error.message || JSON.stringify(error)));
     } finally {
       setSubiendo(false);
     }
