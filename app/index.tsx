@@ -8,55 +8,114 @@ export default function SplashScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    // ✅ CONEXIÓN A SUPABASE CADA 24 HORAS
-    iniciarConexionDiaria();
+    let mounted = true;
 
-    const checkAuth = async () => {
-      // Espera 500ms para que React termine de renderizar
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    const inicializar = async () => {
+      try {
+        // ✅ PASO 1: INICIAR SISTEMA DE CONEXIÓN CADA 24 HORAS
+        console.log("🔌 Iniciando sistema de conexión a Supabase...");
+        iniciarConexionDiaria();
+        console.log("✅ Sistema de conexión inicializado");
 
-      const usuario = sessionStorage.getItem("usuarioActual");
-      console.log("Usuario encontrado:", usuario);
+        // ✅ PASO 2: ESPERAR UN POCO PARA QUE REACT TERMINE
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
-      if (usuario) {
-        try {
-          const usuarioParsed = JSON.parse(usuario);
-          const usuarioNombre = usuarioParsed.nombre || usuarioParsed.email || "Desconocido";
+        if (!mounted) return;
 
-          // ✅ REGISTRAR ENTRADA DIARIA
-          console.log("Registrando entrada de:", usuarioNombre);
-          await accesosService.registrarAcceso({
-            nombre_usuario: usuarioNombre,
-            accion: "ENTRADA_DIARIA",
-            resultado: "EXITOSO",
-            pagina_actual: "SPLASH_SCREEN",
-            detalles: {
-              fecha: new Date().toLocaleDateString("es-ES"),
-              hora: new Date().toLocaleTimeString("es-ES"),
-              tipo_evento: "APERTURA_APLICACION",
-            },
-          });
+        // ✅ PASO 3: VERIFICAR SI HAY USUARIO AUTENTICADO
+        const usuarioGuardado = sessionStorage.getItem("usuarioActual");
+        console.log("🔐 Verificando autenticación...", usuarioGuardado ? "Sí" : "No");
 
-          console.log("✅ Entrada registrada correctamente");
-        } catch (error) {
-          console.error("❌ Error al registrar entrada:", error);
+        if (usuarioGuardado) {
+          // USUARIO AUTENTICADO
+          try {
+            const usuarioParsed = JSON.parse(usuarioGuardado);
+            const usuarioNombre = usuarioParsed.nombre || usuarioParsed.email || "Desconocido";
+
+            console.log(`✅ Usuario autenticado: ${usuarioNombre}`);
+
+            // ✅ REGISTRAR ENTRADA DIARIA EN AUDITORÍA
+            console.log("📊 Registrando entrada diaria...");
+            const resultadoEntrada = await accesosService.registrarAcceso({
+              nombre_usuario: usuarioNombre,
+              accion: "ENTRADA_DIARIA",
+              resultado: "EXITOSO",
+              pagina_actual: "SPLASH_SCREEN",
+              detalles: {
+                fecha: new Date().toLocaleDateString("es-ES"),
+                hora: new Date().toLocaleTimeString("es-ES"),
+                tipo_evento: "APERTURA_APLICACION",
+                rol: usuarioParsed.rol || "usuario",
+              },
+            });
+
+            if (resultadoEntrada) {
+              console.log("✅ Entrada registrada correctamente en auditoría");
+            } else {
+              console.warn("⚠️ Entrada registrada pero no se pudo guardar en BD");
+            }
+
+            // ✅ REDIRIGIR AL MENÚ PRINCIPAL
+            console.log("🚀 Redirigiendo a menú principal...");
+            if (mounted) {
+              // @ts-ignore
+              router.replace("/(tabs)");
+            }
+          } catch (error: any) {
+            console.error("❌ Error procesando usuario autenticado:", error);
+
+            // Registrar el error
+            await accesosService.registrarError(
+              "SISTEMA",
+              error.message || "Error en splash screen",
+              "SPLASH_SCREEN",
+              { tipo: "ERROR_AUTENTICACION" }
+            );
+
+            // Redirigir a login como fallback
+            if (mounted) {
+              // @ts-ignore
+              router.replace("/(auth)/login");
+            }
+          }
+        } else {
+          // NO HAY USUARIO AUTENTICADO
+          console.log("❌ No hay usuario autenticado");
+          console.log("🚀 Redirigiendo a login...");
+
+          if (mounted) {
+            // @ts-ignore
+            router.replace("/(auth)/login");
+          }
         }
+      } catch (error: any) {
+        console.error("❌ Error crítico en splash screen:", error);
 
-        console.log("Redirigiendo a tabs");
-        // @ts-ignore
-        router.replace("/(tabs)");
-      } else {
-        console.log("Redirigiendo a login");
-        // @ts-ignore
-        router.replace("/(auth)/login");
+        if (mounted) {
+          // Redirigir a login como fallback
+          // @ts-ignore
+          router.replace("/(auth)/login");
+        }
       }
     };
 
-    checkAuth();
+    inicializar();
+
+    // Cleanup: evitar memory leaks
+    return () => {
+      mounted = false;
+    };
   }, [router]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff", justifyContent: "center", alignItems: "center" }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#f0f4f8",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
       <ActivityIndicator size="large" color="#2563eb" />
     </View>
   );

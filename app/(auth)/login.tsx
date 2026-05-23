@@ -12,12 +12,50 @@ export default function LoginScreen() {
   const [intentos, setIntentos] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [verificando, setVerificando] = useState(true);
+  const [version, setVersion] = useState("2.4.8"); // Valor por defecto
 
   const MAX_INTENTOS = 3;
 
   useEffect(() => {
+    // Cargar versión del CSV
+    cargarVersion();
+    // Verificar sesión
     verificarSesion();
   }, []);
+
+  // ========== CARGAR VERSIÓN DEL CSV ==========
+  const cargarVersion = async () => {
+    try {
+      console.log("📋 Cargando versión desde version.csv...");
+
+      // Intentar cargar desde la carpeta public (si estás en web/Expo)
+      if (Platform.OS === "web") {
+        const response = await fetch("/version.csv");
+        if (response.ok) {
+          const contenido = await response.text();
+          const versionExtraida = contenido.split(";")[0].trim();
+          console.log("✅ Versión cargada:", versionExtraida);
+          setVersion(versionExtraida);
+          return;
+        }
+      }
+
+      // Alternativa: Leer desde assets o carpeta pública del proyecto
+      // Para React Native, usar require o import estático
+      try {
+        const versionData = require("../version.csv");
+        if (versionData) {
+          setVersion(versionData);
+          console.log("✅ Versión cargada desde assets:", versionData);
+        }
+      } catch (e) {
+        console.warn("⚠️ No se pudo cargar version.csv, usando valor por defecto");
+      }
+    } catch (error) {
+      console.error("❌ Error cargando versión:", error);
+      // Mantener versión por defecto
+    }
+  };
 
   const verificarSesion = async () => {
     try {
@@ -218,8 +256,9 @@ export default function LoginScreen() {
           </Pressable>
         </View>
 
+        {/* ========== FOOTER CON VERSIÓN DINÁMICA ========== */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>v2.4.8 - 2026</Text>
+          <Text style={styles.footerText}>v{version}</Text>
         </View>
 
         <View style={styles.infoBox}>

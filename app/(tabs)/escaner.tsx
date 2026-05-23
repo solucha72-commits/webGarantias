@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, Platform, ActivityIndicator, Modal, 
 import { useRouter } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import { supabase } from "@/lib/supabase";
+import accesosService from "@/lib/accesoService";
 
 export default function Escaner() {
   const router = useRouter();
@@ -28,8 +29,38 @@ export default function Escaner() {
       const res = await fetch(archivo.uri);
       fileBody = await res.blob();
 
-      const { error } = await supabase.storage.from("garantias").upload(nombreUnico, fileBody);
+      console.log("📤 Subiendo archivo:", nombreUnico);
+
+      // Subir a bucket en carpeta PDF
+      const { error } = await supabase.storage
+        .from("garantias")
+        .upload(`pdf/${nombreUnico}`, fileBody);
+
       if (error) throw error;
+
+      console.log("✅ Archivo subido exitosamente");
+
+      // ✅ REGISTRAR EN AUDITORÍA
+      const usuarioActual = sessionStorage.getItem("usuarioActual");
+      const usuarioNombre = usuarioActual 
+        ? JSON.parse(usuarioActual).nombre 
+        : "SISTEMA";
+
+      await accesosService.registrarAcceso({
+        nombre_usuario: usuarioNombre,
+        accion: "UPLOAD_PDF",
+        resultado: "EXITOSO",
+        pagina_actual: "ESCANER",
+        detalles: {
+          nombre_archivo: archivo.name,
+          nombre_unico: nombreUnico,
+          tamaño_bytes: fileBody.size,
+          tipo_archivo: archivo.mimeType,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      console.log("📊 PDF registrado en auditoría");
 
       setDocumentoCapturado({
         nombre: archivo.name,
@@ -40,6 +71,21 @@ export default function Escaner() {
       alert("✅ Documento capturado exitosamente");
       setModalConfirmacion(true);
     } catch (error: any) {
+      console.error("❌ Error al capturar documento:", error);
+
+      // Registrar error en auditoría
+      const usuarioActual = sessionStorage.getItem("usuarioActual");
+      const usuarioNombre = usuarioActual 
+        ? JSON.parse(usuarioActual).nombre 
+        : "SISTEMA";
+
+      await accesosService.registrarError(
+        usuarioNombre,
+        error.message || "Error al subir PDF",
+        "ESCANER",
+        { tipo: "ERROR_UPLOAD_PDF" }
+      );
+
       alert("❌ Error al capturar documento: " + error.message);
     } finally {
       setSubiendo(false);
